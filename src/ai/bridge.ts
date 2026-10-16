@@ -131,7 +131,7 @@ export class EditorBridge {
       const batch = step.tool === 'text_fx_apply' ? textFxBatch(info, step.args as unknown as TextFxArgs)
         : step.tool === 'text_fx_clear' ? textFxClearBatch(info, step.args.layer as number)
         // Placing an asset (paste) drops the selection; bring the last one back for the mask.
-        : step.tool === 'region_mask' ? [...(await selectionInfo(session) ? [] : [{ cmd: 'select.reselect' }]), ...regionMaskBatch(step.args as { layer: number })]
+        : step.tool === 'region_mask' ? [...(await selectionInfo(session) ? [] : [{ cmd: 'select.reselect' }]), ...regionMaskBatch(step.args as { layer: number; feather?: number })]
         : EDIT_BATCH[step.tool](step.args);
       const reply = await session.request(batch, key, { baseRevision: observed });
       const created = reply.results.map((r) => (r.value as { layer?: number } | undefined)?.layer).filter((x): x is number => typeof x === 'number');

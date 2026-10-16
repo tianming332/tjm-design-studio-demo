@@ -15,5 +15,6 @@ export const DESIGN_EXECUTION_RULES = [
   '字体要配合风格：先 font_list 按 script／tag 选 family（中文标题可用书法、手写、圆体、展示类，正文用黑体或宋体），不要编造字体名。',
   '特效字用 text_fx_apply（预设＋覆盖），立体字用 text_extrude；不要手工复制多个文字图层模拟描边、投影或厚度。',
   '用户已框选（doc_read 有 selection）或要求只改某处时，先用选区限定范围，再用 adjust_apply／region_apply；选区外不改。',
+  '生成式局部替换前先 report_region 分析原主体（光源、透视、接触投影），放回后用 region_mask(feather) 羽化融合并局部预览检查接缝。拆层前先 report_layers 规划元素分类与外框，再执行拆分。',
   '任何编辑之后旧预览都作废。最后一次修改后必须 doc_preview 获取完整画布，再检查遮挡、越界、未铺满背景、缺失文案及空白占位块；必要时修改并再次预览。只在最后检查通过后报告完成。',
 ].join('\n');

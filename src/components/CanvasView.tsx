@@ -25,6 +25,7 @@ import { rulerTicks, type Unit } from '../engine/units';
 import type { SelectMode } from '../engine/protocol';
 import type { ShapeInfo } from '../engine/session';
 import { SelectionActions } from './SelectionActions';
+import { useTouch } from '../state/touch';
 
 const RULER = 18;
 
@@ -125,6 +126,11 @@ export function CanvasView() {
   const tfSrcRef = useRef<{ key: string; src?: TfPreviewSrc } | null>(null);
   /** Polygonal lasso in progress (vertices) and the selection mode it started with. */
   const polyRef = useRef<{ points: [number, number][]; mode: SelectMode } | null>(null);
+  // Touch gestures: two fingers pinch-zoom / pan, a quick two-finger tap undoes, three redoes.
+  // After a gesture the remaining fingers are ignored until all are lifted (no stray strokes).
+  const touchesRef = useRef(new Map<number, { x: number; y: number }>());
+  const pinchRef = useRef<{ d0: number; mid0: { x: number; y: number }; s0: number; tx0: number; ty0: number; moved: boolean; at: number; count: number } | null>(null);
+  const gestureHoldRef = useRef(false);
   /** Pen subpath in progress. */
   const penRef = useRef<Knot[] | null>(null);
   /** Pointer position in document pixels (brush cursor, rubber bands). */
@@ -526,9 +532,66 @@ export function CanvasView() {
     await useStore.getState().refreshActivePath();
   };
 
+  const pinchFrame = () => {
+    const pts = [...touchesRef.current.values()];
+    const [a, b] = pts;
+    return { d: Math.hypot(b.x - a.x, b.y - a.y) || 1, mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 } };
+  };
+  /** True when the touch event belongs to a multi-finger gesture (the tool must not see it). */
+  const touchDown = (e: React.PointerEvent): boolean => {
+    if (e.pointerType !== 'touch') return false;
+    touchesRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (touchesRef.current.size >= 2) {
+      if (dragRef.current) { dragRef.current = null; band(null); paintOverlay(); }
+      const f = pinchFrame();
+      const prev = pinchRef.current;
+      pinchRef.current = { d0: f.d, mid0: f.mid, s0: view.scale, tx0: view.tx, ty0: view.ty, moved: prev?.moved ?? false, at: prev?.at ?? Date.now(), count: Math.max(prev?.count ?? 0, touchesRef.current.size) };
+      return true;
+    }
+    return gestureHoldRef.current;
+  };
+  const touchMove = (e: React.PointerEvent): boolean => {
+    if (e.pointerType !== 'touch' || !touchesRef.current.has(e.pointerId)) return false;
+    touchesRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const p = pinchRef.current;
+    if (p && touchesRef.current.size >= 2) {
+      const f = pinchFrame();
+      const r = wrapRef.current?.getBoundingClientRect();
+      const left = r?.left ?? 0, top = r?.top ?? 0;
+      const scale = Math.min(16, Math.max(0.05, p.s0 * f.d / p.d0));
+      const docX = (p.mid0.x - left - p.tx0) / p.s0, docY = (p.mid0.y - top - p.ty0) / p.s0;
+      if (Math.abs(f.d - p.d0) > 8 || Math.hypot(f.mid.x - p.mid0.x, f.mid.y - p.mid0.y) > 8) p.moved = true;
+      setView({ scale, tx: f.mid.x - left - docX * scale, ty: f.mid.y - top - docY * scale });
+      return true;
+    }
+    return gestureHoldRef.current;
+  };
+  const touchUp = (e: React.PointerEvent): boolean => {
+    if (e.pointerType !== 'touch' || !touchesRef.current.has(e.pointerId)) return false;
+    touchesRef.current.delete(e.pointerId);
+    const p = pinchRef.current;
+    if (p) {
+      if (touchesRef.current.size === 0) {
+        pinchRef.current = null;
+        if (!p.moved && Date.now() - p.at < 350) void (p.count >= 3 ? useStore.getState().redo() : useStore.getState().undo());
+      } else if (touchesRef.current.size === 1) { pinchRef.current = { ...p }; }
+      gestureHoldRef.current = touchesRef.current.size > 0;
+      return true;
+    }
+    if (gestureHoldRef.current) { gestureHoldRef.current = touchesRef.current.size > 0; return true; }
+    return false;
+  };
+
   const onPointerDown = (e: React.PointerEvent) => {
     if (!doc) return;
     (e.target as Element).setPointerCapture(e.pointerId);
+    if (touchDown(e)) return;
+    // With a stylus in use, a single finger moves the view and the pen does the drawing.
+    const touchPrefs = useTouch.getState();
+    if (e.pointerType === 'touch' && touchPrefs.penDraws && touchPrefs.penSeen && !useStore.getState().transformSession) {
+      dragRef.current = newDrag('pan', e, toDoc(e), useStore.getState().selectOpts.mode);
+      return;
+    }
     const panning = space || e.button === 1 || activeTool === 'hand';
     const startDoc = toDoc(e);
     const st = useStore.getState();
@@ -707,6 +770,7 @@ export function CanvasView() {
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
+    if (touchMove(e)) return;
     const now = toDoc(e);
     cursorRef.current = [now.x, now.y];
     const d = dragRef.current;
@@ -809,6 +873,7 @@ export function CanvasView() {
   };
 
   const onPointerUp = async (e: React.PointerEvent) => {
+    if (touchUp(e)) return;
     const d = dragRef.current;
     dragRef.current = null;
     if (!d) return;
@@ -1002,6 +1067,7 @@ export function CanvasView() {
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={(e) => void onPointerUp(e)}
+      onPointerCancel={(e) => { touchUp(e); if (dragRef.current) { dragRef.current = null; band(null); paintOverlay(); } }}
       onPointerLeave={() => { cursorRef.current = undefined; if (!dragRef.current) paintOverlay(); }}
       onDoubleClick={() => void onDoubleClick()}
       onContextMenu={(e) => {

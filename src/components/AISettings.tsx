@@ -9,31 +9,36 @@ import { Modal } from './Modal';
 export const useAISettings = create<{ open: boolean }>(() => ({ open: false }));
 export const openAISettings = () => useAISettings.setState({ open: true });
 
-type Vendor = 'gemini' | 'openai' | 'anthropic';
-interface VendorState { keySaved: boolean; keyMasked: string; baseUrl: string }
+type Vendor = string;
+interface VendorState { label: string; console: string; image: boolean; keySaved: boolean; keyMasked: string; baseUrl: string; usable: number; keys: { id: number }[] }
 interface Model { provider: Vendor; id: string; label: string; uses: string[]; enabled: boolean }
 interface State {
-  config: { models: { agent: string; agentProvider: Vendor; imageProvider: 'gemini' | 'openai'; openaiImage: string }; verified: { agent?: { model: string; provider?: string } } };
+  config: { models: { agent: string; agentProvider: Vendor; imageProvider: Vendor; imageModel: string }; verified: { agent?: { model: string; provider?: string } } };
   vendors: Record<Vendor, VendorState>;
   models: Model[];
   gemini: { textModel: string; editModel: string };
 }
 
-const LABEL: Record<Vendor, string> = { gemini: 'Google Gemini', openai: 'OpenAI（GPT）', anthropic: 'Anthropic（Claude）' };
-const KEY_HINT: Record<Vendor, string> = { gemini: 'aistudio.google.com 申请', openai: 'platform.openai.com 申请', anthropic: 'console.anthropic.com 申请' };
 
 function VendorRow({ id, v, onSaved }: { id: Vendor; v: VendorState; onSaved: (s: State) => void }) {
   const [key, setKey] = useState('');
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
   const act = async (fn: () => Promise<void>) => { setBusy(true); setMsg(''); try { await fn(); } catch (e) { setMsg((e as Error).message); } finally { setBusy(false); } };
+  // One key per vendor here: saving replaces the pool's keys (the Admin manages larger pools).
+  const replace = async () => {
+    let st: State | undefined;
+    for (const k of v.keys) st = await localAdmin<State>(`providers/${id}/keys/${k.id}`, 'DELETE');
+    if (key.trim()) st = await localAdmin<State>(`providers/${id}/keys`, 'POST', { name: '本机', apiKey: key.trim() });
+    if (st) onSaved(st);
+  };
   return <div className="ai-vendor-row">
-    <div><strong>{LABEL[id]}</strong><small>{v.keySaved ? `已保存 ${v.keyMasked}` : `未填写 · ${KEY_HINT[id]}`}</small></div>
-    <input type="password" autoComplete="off" aria-label={`${LABEL[id]} API Key`} placeholder={v.keySaved ? '粘贴新 Key 以替换' : '粘贴 API Key'} value={key} onChange={(e) => setKey(e.target.value)} />
+    <div><strong>{v.label}</strong><small>{v.keySaved ? `已保存 ${v.keyMasked}` : `未填写 · ${v.console} 申请`}{v.image ? ' · 可生图' : ''}</small></div>
+    <input type="password" autoComplete="off" aria-label={`${v.label} API Key`} placeholder={v.keySaved ? '粘贴新 Key 以替换' : '粘贴 API Key'} value={key} onChange={(e) => setKey(e.target.value)} />
     <div className="ai-vendor-actions">
-      <button className="primary" disabled={busy || !key.trim()} onClick={() => void act(async () => { onSaved(await localAdmin('providers/' + id, 'PUT', { apiKey: key.trim() })); setKey(''); setMsg('已保存'); })}>保存</button>
+      <button className="primary" disabled={busy || !key.trim()} onClick={() => void act(async () => { await replace(); setKey(''); setMsg('已保存'); })}>保存</button>
       <button disabled={busy || !v.keySaved} onClick={() => void act(async () => { const r = await localAdmin<{ models: unknown[]; latencyMs: number }>(`providers/${id}/models`, 'POST', {}); setMsg(`Key 可用，官方模型 ${r.models.length} 个（${r.latencyMs} ms）`); })}>测试</button>
-      <button className="text-button" disabled={busy || !v.keySaved} onClick={() => void act(async () => { onSaved(await localAdmin('providers/' + id, 'PUT', { clearKey: true })); setMsg('已清除'); })}>清除</button>
+      <button className="text-button" disabled={busy || !v.keySaved} onClick={() => void act(async () => { await replace(); setMsg('已清除'); })}>清除</button>
     </div>
     {msg && <p className="muted ai-vendor-msg" role="status">{msg}</p>}
   </div>;
@@ -45,13 +50,13 @@ export function AISettings() {
   const [probe, setProbe] = useState('');
   const [busy, setBusy] = useState(false);
   const [found, setFound] = useState<{ provider: Vendor; models: { id: string; label: string }[] }>();
-  const [form, setForm] = useState({ agentProvider: 'gemini' as Vendor, agent: '', imageProvider: 'gemini' as 'gemini' | 'openai', openaiImage: '', textModel: '', editModel: '' });
+  const [form, setForm] = useState({ agentProvider: 'gemini' as Vendor, agent: '', imageProvider: 'gemini' as Vendor, imageModel: '', textModel: '', editModel: '' });
   const load = async () => {
     const st = await localAdmin<State>('state');
     const g = await localAdmin<{ textModel: string; editModel: string }>('gemini');
     const full = { ...st, gemini: g };
     setS(full);
-    setForm({ agentProvider: st.config.models.agentProvider, agent: st.config.models.agent, imageProvider: st.config.models.imageProvider, openaiImage: st.config.models.openaiImage, textModel: g.textModel, editModel: g.editModel });
+    setForm({ agentProvider: st.config.models.agentProvider, agent: st.config.models.agent, imageProvider: st.config.models.imageProvider, imageModel: st.config.models.imageModel, textModel: g.textModel, editModel: g.editModel });
   };
   useEffect(() => { load().catch((e) => setError((e as Error).message)); }, []);
   const close = () => { useAISettings.setState({ open: false }); void useWb.getState().load(); };
@@ -59,7 +64,7 @@ export function AISettings() {
   const save = async () => {
     setBusy(true); setError('');
     try {
-      await localAdmin('config', 'PUT', { models: { agentProvider: form.agentProvider, agent: form.agent.trim(), imageProvider: form.imageProvider, openaiImage: form.openaiImage.trim() } });
+      await localAdmin('config', 'PUT', { models: { agentProvider: form.agentProvider, agent: form.agent.trim(), imageProvider: form.imageProvider, imageModel: form.imageModel.trim() } });
       await localAdmin('gemini', 'PUT', { textModel: form.textModel.trim(), editModel: form.editModel.trim() });
       await load();
       void useWb.getState().load();
@@ -80,7 +85,7 @@ export function AISettings() {
     catch (e) { setError((e as Error).message); }
   };
   const addModel = async (provider: Vendor, id: string, label: string) => {
-    const uses = /image|imagen|dall-e/i.test(id) ? ['image'] : provider === 'gemini' ? ['agent', 'text'] : ['agent'];
+    const uses = /image|imagen|dall-e|seedream|cogview|wanx/i.test(id) ? ['image'] : ['agent', 'text'];
     const next = [...(s?.models ?? []), { provider, id, label, uses, enabled: true }];
     try { const st = await localAdmin<State>('models', 'PUT', { models: next }); setS((old) => old && { ...old, models: st.models }); }
     catch (e) { setError((e as Error).message); }
@@ -94,27 +99,27 @@ export function AISettings() {
           <section className="settings-section">
             <div className="section-title"><h3>服务商 Key</h3><span className="subtle-badge">仅保存在此浏览器</span></div>
             <p className="muted">浏览器直接连接官方接口，不经过任何中转服务器。体验时建议使用可随时删除的临时 Key，并在服务商后台设置用量上限；用完可在这里清除。</p>
-            {(['gemini', 'openai', 'anthropic'] as const).map((id) => <VendorRow key={id} id={id} v={s.vendors[id]} onSaved={(st) => setS((old) => old && { ...old, vendors: st.vendors })} />)}
+            {Object.entries(s.vendors).map(([id, v]) => <VendorRow key={id} id={id} v={v} onSaved={(st) => setS((old) => old && { ...old, vendors: st.vendors })} />)}
           </section>
           <section className="settings-section">
             <div className="section-title"><h3>设计 Agent</h3><span className="subtle-badge">{verified ? '已验证' : '未探测'}</span></div>
             <div className="ai-form-grid">
-              <label>Agent 服务商<select value={form.agentProvider} onChange={(e) => setForm({ ...form, agentProvider: e.target.value as Vendor })}><option value="gemini">Gemini</option><option value="openai">OpenAI（GPT）</option><option value="anthropic">Anthropic（Claude）</option></select></label>
+              <label>Agent 服务商<select value={form.agentProvider} onChange={(e) => setForm({ ...form, agentProvider: e.target.value })}>{Object.entries(s.vendors).map(([id, v]) => <option key={id} value={id}>{v.label}</option>)}</select></label>
               <label>Agent 模型<input list="ai-dl-agent" value={form.agent} placeholder="从模型库选择或直接填写" onChange={(e) => setForm({ ...form, agent: e.target.value })} />{datalist('ai-dl-agent', options(form.agentProvider, 'agent'))}</label>
-              <label>AI 生图服务商<select value={form.imageProvider} onChange={(e) => setForm({ ...form, imageProvider: e.target.value as 'gemini' | 'openai' })}><option value="gemini">Gemini</option><option value="openai">OpenAI（GPT Image）</option></select></label>
-              {form.imageProvider === 'openai'
-                ? <label>OpenAI 生图模型<input list="ai-dl-oimg" value={form.openaiImage} onChange={(e) => setForm({ ...form, openaiImage: e.target.value })} />{datalist('ai-dl-oimg', options('openai', 'image'))}</label>
+              <label>AI 生图服务商<select value={form.imageProvider} onChange={(e) => setForm({ ...form, imageProvider: e.target.value })}>{Object.entries(s.vendors).filter(([, v]) => v.image).map(([id, v]) => <option key={id} value={id}>{v.label}</option>)}</select></label>
+              {form.imageProvider !== 'gemini'
+                ? <label>{s.vendors[form.imageProvider]?.label} 生图模型<input list="ai-dl-oimg" value={form.imageModel} onChange={(e) => setForm({ ...form, imageModel: e.target.value })} />{datalist('ai-dl-oimg', options(form.imageProvider, 'image'))}</label>
                 : <><label>Gemini 文生图模型<input list="ai-dl-gimg" value={form.textModel} onChange={(e) => setForm({ ...form, textModel: e.target.value })} /></label>
                   <label>Gemini 图生图／编辑模型<input list="ai-dl-gimg" value={form.editModel} onChange={(e) => setForm({ ...form, editModel: e.target.value })} />{datalist('ai-dl-gimg', options('gemini', 'image'))}</label></>}
             </div>
-            <p className="muted">Claude 不能生图；用 Claude 做 Agent 时，生图仍走上面选的生图服务商。</p>
+            <p className="muted">Claude、DeepSeek 不能生图；用它们做 Agent 时，生图走上面选的生图服务商。国内服务商（智谱、千问、豆包、DeepSeek）是否允许浏览器直连取决于其跨域策略；「测试」报连接失败时多半是被浏览器拦截，请换用其他服务商。</p>
             <div className="settings-row"><button className="primary" disabled={busy} onClick={() => void save()}>保存模型设置</button><button disabled={busy || !form.agent} onClick={() => void runProbe()}>能力探测</button></div>
             {probe && <pre className="ai-probe" role="status">{probe}</pre>}
           </section>
           <section className="settings-section">
             <div className="section-title"><h3>模型库</h3><span className="subtle-badge">{s.models.length} 个</span></div>
             <p className="muted">用已保存的 Key 获取官方模型列表，加入后会出现在上方模型框的候选里。</p>
-            <div className="settings-row">{(['gemini', 'openai', 'anthropic'] as const).map((p) => <button key={p} disabled={!s.vendors[p].keySaved} onClick={() => void discover(p)}>获取 {p === 'gemini' ? 'Gemini' : p === 'openai' ? 'GPT' : 'Claude'} 模型</button>)}</div>
+            <div className="settings-row">{Object.entries(s.vendors).filter(([, v]) => v.keySaved).map(([p, v]) => <button key={p} onClick={() => void discover(p)}>获取 {v.label.replace(/（.*）/, '')} 模型</button>)}</div>
             <div className="ai-model-chips">{s.models.map((m) => <span key={`${m.provider}:${m.id}`} className="subtle-badge" title={m.uses.join(' / ')}>{m.id}</span>)}</div>
             {found && <div className="ai-discover">{found.models.map((m) => {
               const has = s.models.some((x) => x.provider === found.provider && x.id === m.id);

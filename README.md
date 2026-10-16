@@ -43,6 +43,7 @@ No install, no account, no server. Everything runs in your browser tab.
 | **Design agent** | Analyse brief → check assets → pick a Skill → act with editor tools → preview and self-check. |
 | **AI assets** | Text-to-image and image-to-image. Results go to the asset library, then onto the canvas. |
 | **Font library** | 19 commercially usable Chinese, Japanese and Latin fonts, each downloaded the first time it's used. |
+| **Touch & stylus** | iPad and phone layouts, fullscreen on first touch, pinch to zoom, two-finger tap to undo; with a pen, the pen draws and fingers move the canvas. Scene tools for touch drawing and touch editing. |
 
 ## ⚡ Quick start
 
@@ -70,6 +71,13 @@ There is no backend. The agent's workflow, Skill library and asset library run i
 | Google Gemini | ✅ | ✅ | aistudio.google.com |
 | OpenAI | ✅ | ✅ (GPT Image) | platform.openai.com |
 | Anthropic Claude | ✅ | — | console.anthropic.com |
+| Zhipu GLM | ✅ | ✅ (CogView) | open.bigmodel.cn |
+| DeepSeek | ✅ (text only) | — | platform.deepseek.com |
+| Alibaba Qwen (Bailian) | ✅ | ✅ (qwen-image) | bailian.console.aliyun.com |
+| ByteDance Doubao (Ark) | ✅ | ✅ (Seedream, AI layer split) | console.volcengine.com/ark |
+
+> [!NOTE]
+> Whether a provider can be called straight from a browser depends on its CORS policy. If **测试** (test) reports a connection error, the browser most likely blocked it; use another provider.
 
 Open **AI 制图 → 配置 AI (自带 Key)**, or press `Ctrl/⌘+F` and search "AI 设置". Then paste a key, pick models and run **能力探测** (capability probe).
 
@@ -99,6 +107,6 @@ Issues and PRs are welcome. Please run `npm test` and `npm run smoke:demo` befor
 - **Trademarks:** the TJM name and the logos in `public/brand/` (and the lowercase "tjm" wordmark) are **not** covered by the license (Apache-2.0 §6). Forks and redistributions must replace them and must not suggest endorsement.
 - **Third-party code:** PhotoCraft (MIT OR Apache-2.0), vgpu and vgpu-optimized-black-hole, ag-psd, React, zustand and sql.js (MIT). License texts are in [`third_party/`](third_party).
 - **Fonts:** SIL Open Font License 1.1, with the license in each font folder. You may use them freely in your designs, including commercial work and embedded in exported files. You may not sell the font files on their own, and modified fonts must not reuse the reserved font name.
-- **Your work and AI output:** you own what you create. AI-generated content is also subject to the terms of the provider you use (Google, OpenAI, Anthropic), and API usage is billed to your own account. You are responsible for having the rights to anything you upload or import, including images from third-party websites.
+- **Your work and AI output:** you own what you create. AI-generated content is also subject to the terms of the provider you use (Google, OpenAI, Anthropic, Zhipu, DeepSeek, Alibaba, ByteDance), and API usage is billed to your own account. You are responsible for having the rights to anything you upload or import, including images from third-party websites.
 
 <div align="center"><sub>Made for designers who want AI that edits, not just generates.</sub></div>

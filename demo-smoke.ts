@@ -32,6 +32,7 @@ try {
   await page.reload();
   await page.waitForFunction(() => !!(window as W).__tjmWb.getState().caps, null, { timeout: 30_000 });
   r.keyPersisted = await page.evaluate(async () => (await (await fetch('/admin/api/workbench/state')).json()).data.vendors.gemini.keyMasked);
+  r.vendorRows = await page.evaluate(async () => Object.keys((await (await fetch('/admin/api/workbench/state')).json()).data.vendors).length);
   r.keyNotInDom = !(await page.content()).includes('AIza-local-test-0001');
 
   // Agent workflow on the simulated model, entirely in the page.
@@ -65,7 +66,7 @@ try {
   await real.waitForFunction(() => !!(window as W).__tjmWb.getState().caps, null, { timeout: 30_000 });
   r.probe = await real.evaluate(async () => {
     const call = async (p: string, m: string, b?: unknown) => (await (await fetch(`/admin/api/workbench/${p}`, { method: m, headers: { 'content-type': 'application/json' }, body: b === undefined ? undefined : JSON.stringify(b) })).json()).data;
-    await call('providers/anthropic', 'PUT', { apiKey: 'sk-ant-local-test-01' });
+    await call('providers/anthropic/keys', 'POST', { name: 't', apiKey: 'sk-ant-local-test-01' });
     await call('config', 'PUT', { models: { agentProvider: 'anthropic', agent: 'claude-sonnet-4-5' } });
     const p = await call('probe', 'POST', {});
     return { ok: p.ok, provider: p.provider, checks: p.checks.map((c: any) => `${c.ok ? '✓' : '✗'} ${c.detail}`) };
@@ -78,7 +79,7 @@ try {
 }
 r.errors = errors;
 console.log(JSON.stringify(r, null, 2));
-const ok = r.noExperienceCode && r.caps.aiEnabled && r.caps.mock && r.keyPersisted === '••••••••0001' && r.keyNotInDom
+const ok = r.vendorRows === 7 && r.noExperienceCode && r.caps.aiEnabled && r.caps.mock && r.keyPersisted === '••••••••0001' && r.keyNotInDom
   && r.task.state === 'completed' && r.task.title && r.generation.status === 'succeeded' && r.generation.bytes > 0
   && r.probe.ok && r.probe.provider === 'anthropic' && r.claudeHeaders?.browser === 'true' && !errors.length;
 console.log(ok ? 'DEMO SMOKE OK' : 'DEMO SMOKE FAILED');

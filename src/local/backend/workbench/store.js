@@ -1,6 +1,7 @@
 // Persistence for the design workbench on the shared Admin store (D1 in production, the local SQLite
 // preview store). Tasks are JSON documents with an optimistic `rev`; asset bytes are chunked.
 import { getSetting, setSetting } from '../db.js';
+import { AGENT_PROVIDERS, IMAGE_PROVIDERS } from './providers.js';
 
 export const wbError = (code, message, status = 400, detail) => Object.assign(new Error(message), { status, code, wb: { code, message, ...(detail === undefined ? {} : { detail }) } });
 
@@ -62,9 +63,12 @@ export async function workbenchConfig(db) {
     models: {
       agent: String(models.agent || ''), 'vision-review': String(models['vision-review'] || ''),
       // Agent vendor (gemini / openai / anthropic) and AI-asset image vendor (gemini / openai).
-      agentProvider: ['openai', 'anthropic'].includes(models.agentProvider) ? models.agentProvider : 'gemini',
-      imageProvider: models.imageProvider === 'openai' ? 'openai' : 'gemini',
-      openaiImage: String(models.openaiImage || 'gpt-image-1')
+      agentProvider: AGENT_PROVIDERS.includes(models.agentProvider) ? models.agentProvider : 'gemini',
+      imageProvider: IMAGE_PROVIDERS.includes(models.imageProvider) ? models.imageProvider : 'gemini',
+      // Non-Gemini image model (Gemini follows 「服务商与 Key」); `openaiImage` was its 1st name.
+      imageModel: String(models.imageModel || (models.imageProvider === 'openai' || !models.imageProvider ? models.openaiImage || 'gpt-image-1' : '')),
+      openaiImage: String(models.openaiImage || 'gpt-image-1'),
+      decomposeModel: String(models.decomposeModel || 'doubao-seedream-5-0-pro-260628')
     },
     limits: normalizeLimits({ ...DEFAULT_LIMITS, ...limits }),
     verified,
@@ -288,34 +292,65 @@ export const SEED_SKILLS = [
     ].join('\n')
   },
   {
-    slug: 'region-edit', category: 'capability', name: '选区局部处理', triggers: '选区,框选,局部,抠图,抠出,移除,去掉,消除,调色,换色,变亮,变暗,背景虚化,只改这里',
-    description: '只在选区内处理图片：调色、抠出为图层、移除物体；选区外保持不变，结果都在新图层上。',
-    tools: ['doc_read', 'doc_preview', 'region_select', 'region_refine', 'region_apply', 'adjust_apply', 'layer_props', 'layer_arrange', 'region_capture', 'image_generate', 'asset_import', 'region_mask', 'filter_apply', 'doc_lint'],
+    slug: 'region-edit', category: 'capability', name: '选区局部处理', triggers: '选区,框选,局部,抠图,抠出,移除,去掉,消除,调色,换色,变亮,变暗,背景虚化,只改这里,替换,换成,换掉',
+    description: '只在选区内处理图片：调色、抠出、移除、生成式替换；替换前先分析主体，结果羽化融合到四周。选区外不变，结果都在新图层上。',
+    tools: ['doc_read', 'doc_preview', 'region_select', 'region_refine', 'region_apply', 'adjust_apply', 'layer_props', 'layer_arrange', 'region_capture', 'report_region', 'image_generate', 'asset_import', 'region_mask', 'filter_apply', 'doc_lint'],
     // Tool lists shipped earlier: an unedited copy in an existing database is upgraded on start.
-    previousTools: [['doc_read', 'doc_preview', 'region_select', 'region_refine', 'region_apply', 'adjust_apply', 'layer_props', 'layer_arrange']],
+    previousTools: [['doc_read', 'doc_preview', 'region_select', 'region_refine', 'region_apply', 'adjust_apply', 'layer_props', 'layer_arrange'], ['doc_read', 'doc_preview', 'region_select', 'region_refine', 'region_apply', 'adjust_apply', 'layer_props', 'layer_arrange', 'region_capture', 'image_generate', 'asset_import', 'region_mask', 'filter_apply', 'doc_lint']],
     body: [
       '# 选区局部处理',
-      '1. doc_read：有 selection 说明用户已框选，以它为范围；没有就用 region_select 建立（主体用 subject，指定物体先估一个框用 object，改背景先 subject 再 inverse）。',
-      '2. 边缘生硬或要柔和过渡时 region_refine（feather 1–4、smooth 10–30）。',
-      '3. 按需求选择：调色 → adjust_apply（选区自动成为蒙版）；抠图 → region_apply cutout；去掉物体 → region_apply remove；质感（锐化、降噪、模糊背景）→ filter_apply（作用于选区）。',
-      '4. 换成别的东西／补画内容（生成式）：region_capture → image_generate(referenceAssetIds=[assetId], aspectRatio=返回值，提示词写清只改中间选区那部分、其余保持参考图原样) → asset_import(assetId=生成结果, rect=capture 返回的 rect, fit=cover, role=subject) → region_mask(新图层)。每次生成计入配额，最多两次。',
-      '5. 目标图层用 doc_read 里真实的像素图层 id；不要修改选区外的图层内容。',
-      '6. doc_preview 局部检查选区边缘与结果；不满意可删掉新图层重做，最多两轮。'
+      '## 1. 确定范围',
+      '- doc_read：有 selection 说明用户已框选，以它为范围；没有就 region_select（主体 subject；指定物体先估框用 object；改背景先 subject 再 inverse）。',
+      '- 目标图层用 doc_read 里真实的像素图层 id；不修改选区外的图层。',
+      '## 2. 非生成式（直接在新图层完成）',
+      '- 调色 → adjust_apply（选区自动成为蒙版）；抠图 → region_apply cutout；去掉物体 → region_apply remove；锐化／降噪／虚化 → filter_apply。',
+      '- 边缘生硬时先 region_refine（feather 1–4、smooth 10–30）。',
+      '## 3. 生成式替换／补画（换主体、换物品、补内容）',
+      '1. 分析主体：doc_preview(region=选区外扩约 30%) 看清局部，再 report_region 写下：主体是什么、姿态朝向、光源方向与强弱、透视与尺度、与背景的接触（投影、倒影、遮挡）、要换成什么、哪些必须保持。',
+      '2. region_capture(pad=0.3)：外圈留足上下文，生成结果才能和四周接上。',
+      '3. image_generate(referenceAssetIds=[capture 的 assetId], aspectRatio=返回值)。提示词按分析写：「只替换中间区域的 X 为 Y；保持参考图外圈的背景、纹理、颜色与光线完全一致；新主体与原主体同样的透视、尺度和光源方向，补上与地面／背景一致的接触投影；边缘自然融入，不要边框、不要色差」。',
+      '4. asset_import(assetId=生成结果, rect=capture 的 rect, fit=cover, role=subject)。',
+      '5. 融合：region_refine(shiftEdge=+3～+8 稍微扩大选区) → region_mask(新图层, feather=选区短边的 2%–5%，通常 12–40px)。颜色或亮度与四周不一致时，对新图层所在区域 adjust_apply（hueSaturation／colorBalance／brightnessContrast 小幅修正）。',
+      '6. 检查接缝：doc_preview(region=选区外扩 30%) 逐边看是否有硬边、色块、错位、重复纹理；有就加大 feather 或扩大 pad 重新生成。每次生成计入配额，最多两次。',
+      '## 4. 交付',
+      '- doc_preview 全图确认；说明新图层名称，原图层保持不变可随时对比。'
     ].join('\n')
   },
   {
-    slug: 'layer-decompose', category: 'capability', name: '平面图分层拆解', triggers: '拆层,分层,拆解,拆成图层,可编辑,改旧图,转成可编辑',
-    description: '把一张平面海报／图片拆成可编辑图层：文字重建为文字图层，主体抠出，背景补全，原图隐藏保留。',
-    tools: ['doc_read', 'doc_preview', 'region_select', 'region_refine', 'region_apply', 'text_create', 'text_style', 'text_fx_apply', 'layer_props', 'layer_group', 'layer_arrange', 'layer_move', 'doc_lint', 'font_list'],
+    slug: 'layer-decompose', category: 'capability', name: '平面图分层拆解', triggers: '拆层,分层,拆解,拆成图层,可编辑,改旧图,转成可编辑,拆成编辑,分离图层',
+    description: '把一张平面海报／生成图拆成可编辑工程：普通文字→文字图层，艺术字／主体／装饰→独立图片层，背景补全，特效与调色单独成层；原图隐藏保留。',
+    tools: ['doc_read', 'doc_preview', 'font_list', 'report_layers', 'region_capture', 'image_decompose', 'asset_import', 'region_select', 'region_refine', 'region_apply', 'text_create', 'text_style', 'text_fx_apply', 'adjust_apply', 'layer_props', 'layer_group', 'layer_arrange', 'layer_move', 'region_mask', 'doc_lint'],
     // Tool lists shipped earlier: an unedited copy in an existing database is upgraded on start.
-    previousTools: [['doc_read', 'doc_preview', 'region_select', 'region_refine', 'region_apply', 'text_create', 'text_style', 'text_fx_apply', 'layer_props', 'layer_group', 'layer_arrange', 'layer_move'], ['doc_read', 'doc_preview', 'region_select', 'region_refine', 'region_apply', 'text_create', 'text_style', 'text_fx_apply', 'layer_props', 'layer_group', 'layer_arrange', 'layer_move', 'doc_lint']],
+    previousTools: [['doc_read', 'doc_preview', 'region_select', 'region_refine', 'region_apply', 'text_create', 'text_style', 'text_fx_apply', 'layer_props', 'layer_group', 'layer_arrange', 'layer_move'], ['doc_read', 'doc_preview', 'region_select', 'region_refine', 'region_apply', 'text_create', 'text_style', 'text_fx_apply', 'layer_props', 'layer_group', 'layer_arrange', 'layer_move', 'doc_lint'], ['doc_read', 'doc_preview', 'region_select', 'region_refine', 'region_apply', 'text_create', 'text_style', 'text_fx_apply', 'layer_props', 'layer_group', 'layer_arrange', 'layer_move', 'doc_lint', 'font_list']],
     body: [
       '# 平面图分层拆解',
-      '1. doc_read 找到要拆的像素图层（通常是唯一的图片层）；doc_preview 看全图，逐条记下每个文字块的内容、外框（用 region/scale 换算回文档像素）、颜色和大致字号。',
-      '2. 文字：对每个文字块 region_select(method=rect, rect 外扩约 6px) → region_apply(op=remove, layer=原图层) 补底；再 text_create 同样内容、位置和近似字号颜色；原文字有描边／投影就用 text_fx_apply 还原。',
-      '3. 主体：region_select(method=subject, layer=原图层) → region_refine(radius 2–4) → region_apply(op=cutout) 抠出主体层，再用同一选区 region_apply(op=remove) 补出干净背景。',
-      '4. 命名与分组：layer_props 命名（「主体-…」「背景（补全）」，文字层用内容命名）；layer_group 分为「文字」「主体」「背景」；原图层 layer_props visible=false 保留，不删除。',
-      '5. doc_preview 与原图对比：文字一字不差、位置大致重合、主体边缘干净；最多两轮修正。复杂叠合和半透明效果如实说明没有完全拆开。'
+      '## 1. 读图与规划（必须先做）',
+      '- doc_read 找到要拆的像素图层；doc_preview 看全图（必要时分区域放大），用 region/scale 换算回文档像素。',
+      '- report_layers 逐个列出元素与外框，按以下分类：',
+      '  - text 普通文字：正文、卖点、价格、日期、按钮字等规整字体 → 重建为可编辑文字层（记下内容、近似字号、颜色、对齐，font 从 font_list 选最接近的）。',
+      '  - art-text 艺术字：标题字效、手写、书法、立体／描边／贴图字、与图形融合的字 → 保留为图片层（不要硬转文字）；若有对应普通文字需求，另建隐藏的文字层备用。',
+      '  - subject 主体：人物、商品、动物等视觉中心。',
+      '  - decoration 装饰：图标、贴纸、几何形、光斑、花草等独立元素。',
+      '  - background 背景：底图、渐变、场景。',
+      '  - effect 特效：投影、外发光、光晕、烟雾、光线等可单独开关的效果。',
+      '  - grade 调色：整体色调、暗角、颗粒等。',
+      '- z 从背景 0 往上编号；标出遮挡关系（谁压在谁上面）。',
+      '## 2A. AI 拆层（优先；需豆包 Key）',
+      '1. region_select(method=all) → region_capture(pad=0) 得到整图素材与 rect。',
+      '2. image_decompose(assetId, rect, targets=规划里除 background／grade 外的元素 name+rect)。',
+      '3. 按返回的 z 从小到大 asset_import(assetId, rect, fit=contain；背景 role=background)，layer_props 用规划里的名字命名。',
+      '4. 普通文字：text_create 在相同位置重建（内容一字不差、字号颜色对齐），原文字图片层 layer_props visible=false 保留；有描边／投影用 text_fx_apply 还原。',
+      '5. 返回 NOT_CONFIGURED／失败时改走 2B。',
+      '## 2B. 选区拆层（无 AI 拆层时）',
+      '1. 普通文字：region_select(rect 外扩约 6px) → region_apply(remove, 原图层) 补底 → text_create 重建。',
+      '2. 艺术字、主体、装饰：region_select(object 或 subject, rect=元素外框, layer=原图层) → region_refine(radius 2–4) → region_apply(cutout) 成独立图层；再对同一选区 region_apply(remove) 补出背景。',
+      '3. 背景：所有元素移除后的补底层合并为「背景（补全）」。',
+      '## 3. 特效与调色',
+      '- 投影／发光：能从元素图层分出来就单独成层命名「特效-投影」；分不开时在元素层上用 text_fx_apply／图层样式重建投影、外发光，并在说明里写明。',
+      '- 调色：用 adjust_apply 建调整图层（如 hueSaturation、colorBalance、photoFilter）还原整体色调，命名「调色-…」，放在最上层。',
+      '## 4. 整理与核对',
+      '- layer_group 分组：「文字」「艺术字」「主体」「装饰」「特效」「背景」，调色层在顶部；原图层 visible=false 保留不删。',
+      '- doc_preview 与原图对比：文字一字不差、元素位置重合、边缘干净、背景无残影；最多两轮修正。拆不开的半透明叠加如实说明。'
     ].join('\n')
   },
   {

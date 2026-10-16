@@ -1,7 +1,7 @@
 // Browser stand-in for the Admin's upstream.js: the Gemini "project pool" is the single key the
 // user saved locally, and image generation calls the official Gemini Interactions API directly.
 import { getSetting, geminiSettings } from './db.js';
-import { decryptSecret } from './security.js';
+import { keyCandidates } from './workbench/keys.js';
 
 function uploadedReference(dataUrl, index = 0) {
   const match = String(dataUrl || '').match(/^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/);
@@ -34,11 +34,9 @@ export async function buildDirectImagePrompt(db, style, input) {
   return [globalPrompt, style.systemPrompt, String(input.prompt || '').trim() || fallback].filter(Boolean).join('\n\n');
 }
 
-/** One "project" = the locally saved Gemini key (id 1 so task pinning keeps working). */
+/** Gemini keys come from the local key pool like every other vendor. */
 export async function geminiProjectCandidates(db, config) {
-  const encoded = await getSetting(db, 'gemini_key_encrypted', '');
-  const apiKey = encoded ? decryptSecret(encoded, config.dataEncryptionKey) : '';
-  return apiKey ? [{ id: 1, name: 'local', apiKey, weight: 1 }] : [];
+  return keyCandidates(db, config, 'gemini');
 }
 
 function findImage(value, depth = 0) {

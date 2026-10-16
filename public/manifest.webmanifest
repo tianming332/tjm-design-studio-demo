@@ -1,0 +1,15 @@
+{
+  "name": "TJM 图形设计工作台",
+  "short_name": "TJM 工作台",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "any",
+  "background_color": "#111111",
+  "theme_color": "#111111",
+  "icons": [
+    { "src": "brand/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "brand/favicon.png", "sizes": "64x64", "type": "image/png" }
+  ]
+}

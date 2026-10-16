@@ -1,0 +1,75 @@
+/* Touch UI (iPad / phone): <html data-device="tablet|phone"> from state/touch.ts.
+   Tablet keeps the desktop arrangement with larger targets; phone moves the tools to a bottom
+   strip and turns the panel drawer into a bottom sheet. */
+
+:root[data-device=tablet], :root[data-device=phone] {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+:root[data-device=tablet] body, :root[data-device=phone] body,
+:root[data-device=tablet] html, :root[data-device=phone] html { overscroll-behavior: none; }
+:root[data-device=tablet] body, :root[data-device=phone] body { position: fixed; inset: 0; overflow: hidden; touch-action: manipulation; }
+:root[data-device=tablet] .canvas-wrap, :root[data-device=phone] .canvas-wrap { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+:root[data-device=tablet] .app, :root[data-device=phone] .app { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; height: 100dvh; padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left); box-sizing: border-box; }
+:root[data-device=tablet] .app input, :root[data-device=tablet] .app textarea, :root[data-device=phone] .app input, :root[data-device=phone] .app textarea { -webkit-user-select: text; user-select: text; }
+:root[data-device=tablet] .value-range, :root[data-device=phone] .value-range { touch-action: pan-y; }
+
+/* Larger hit targets (both touch layouts). */
+:root[data-device=tablet] .toolbar .tool, :root[data-device=tablet] .tool-slot,
+:root[data-device=phone] .toolbar .tool, :root[data-device=phone] .tool-slot { width: 44px; height: 44px; }
+:root[data-device=tablet] .icon-button, :root[data-device=phone] .icon-button { min-width: 36px; min-height: 36px; }
+:root[data-device=tablet] .menu-item, :root[data-device=phone] .menu-item { min-height: 44px; }
+:root[data-device=tablet] .panel-tabs button, :root[data-device=phone] .panel-tabs button { min-height: 38px; }
+:root[data-device=tablet] .layer-row, :root[data-device=phone] .layer-row { min-height: 44px; }
+
+/* Tablet: keep the panel column docked (PC-like) instead of the narrow-window drawer. */
+@media (min-width: 700px) {
+  :root[data-device=tablet] .app.manual-mode { grid-template-columns: 54px minmax(0, 1fr) min(var(--panel-width), 320px); }
+  :root[data-device=tablet] .app.manual-mode.tools-right { grid-template-columns: minmax(0, 1fr) min(var(--panel-width), 320px) 54px; }
+  :root[data-device=tablet] .app.manual-mode .rightrail { display: flex; position: relative; grid-area: layers; top: auto; bottom: auto; right: auto; width: auto; box-shadow: none; }
+  :root[data-device=tablet] .app.manual-mode .panel-toggle, :root[data-device=tablet] .app.manual-mode .drawer-close { display: none; }
+}
+
+/* Phone: tools in a bottom strip, panels in a bottom sheet. */
+:root[data-device=phone] .app.manual-mode, :root[data-device=phone] .app.manual-mode.tools-right,
+:root[data-device=phone] .app.manual-mode.dock-left, :root[data-device=phone] .app.manual-mode.dock-left.tools-right {
+  grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 36px minmax(0, 1fr) calc(56px + env(safe-area-inset-bottom)) 0;
+  grid-template-areas: 'top' 'opts' 'canvas' 'tools' 'status';
+}
+:root[data-device=phone] .app.manual-mode .statusbar { display: none; }
+:root[data-device=phone] .app.manual-mode .toolbar { flex-direction: row; align-items: center; border-right: 0; border-top: 1px solid var(--ui-divider); padding: 0 6px env(safe-area-inset-bottom); overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+:root[data-device=phone] .app.manual-mode .tool-stack { display: flex; flex-direction: row; align-items: center; overflow: visible; flex: 1 0 auto; padding: 0; }
+:root[data-device=phone] .app.manual-mode .tool-section { flex-direction: row; align-items: center; border: 0; border-right: 1px solid var(--ui-divider); padding: 0 4px; }
+:root[data-device=phone] .app.manual-mode .tool-section + .tool-section { border-top: 0; }
+:root[data-device=phone] .app.manual-mode .toolset-toggle { margin: 0 4px; }
+:root[data-device=phone] .app.manual-mode .toolbar-colors { margin: 0 0 0 4px; border: 0; padding: 0 4px; flex-direction: row; }
+:root[data-device=phone] .app.manual-mode .rightrail.drawer-open { position: fixed; left: 0; right: 0; top: auto; bottom: calc(56px + env(safe-area-inset-bottom)); width: auto; height: min(56dvh, 520px); border-left: 0; border-top: 1px solid var(--ui-divider); border-radius: 14px 14px 0 0; box-shadow: 0 -8px 28px #0000002a; z-index: 30; }
+:root[data-device=phone] .tool-popover { top: auto !important; bottom: calc(64px + env(safe-area-inset-bottom)); left: 8px !important; right: 8px !important; }
+:root[data-device=phone] .options-shell { overflow-x: auto; scrollbar-width: none; }
+:root[data-device=phone] .options-shell > * { flex-shrink: 0; }
+:root[data-device=phone] .modal { width: calc(100vw - 16px); max-height: calc(100dvh - 16px); }
+
+/* Touch scene tools. */
+.touch-panel { display: flex; flex-direction: column; gap: 12px; padding: 10px; }
+.touch-panel h4 { margin: 0 0 6px; font-size: 12px; font-weight: 600; color: var(--ui-text-secondary); }
+.touch-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.touch-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.touch-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 58px; padding: 6px 4px; border: 1px solid var(--ui-divider); border-radius: 10px; background: var(--ui-elevated); color: var(--ui-text); font-size: 12px; }
+.touch-tile.active { border-color: var(--ui-accent); background: var(--ui-selected-bg); color: var(--ui-selected-text); }
+.touch-tile:disabled { opacity: .45; }
+.touch-wide { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; border-radius: 10px; }
+.touch-colors { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.touch-swatch { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--ui-divider); padding: 0; }
+.touch-swatch.active { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
+.touch-panel .value-slider { margin-bottom: 8px; }
+.touch-prefs .toggle-row { margin: 10px 0; }
+.touch-prefs .muted { font-size: 11px; line-height: 1.5; }
+
+/* Phone top bar: one scrollable row instead of three wrapped rows (more room for the canvas). */
+:root[data-device=phone] .app .topbar { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; padding: 6px 8px; min-height: 52px; }
+:root[data-device=phone] .app .topbar::after { display: none; }
+:root[data-device=phone] .app .topbar > * { flex-shrink: 0; }
+:root[data-device=phone] .app .topbar .creation-bar { order: -1; margin-left: 0; }
+:root[data-device=phone] .app .topbar .brand { display: none; }
+:root[data-device=phone] .app .topbar .creation-modes { width: auto; }
+:root[data-device=phone] .app.ai-mode, :root[data-device=phone] .app.ai-mode.agent-right { grid-template-rows: auto 0 minmax(0, 1fr) 24px; }

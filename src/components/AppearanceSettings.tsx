@@ -4,12 +4,36 @@ import { backgroundAsset, prepareBackground } from '../appearance/background';
 import { DEFAULT_APPEARANCE, useAppearance, type BackgroundKind, type ThemeMode } from '../state/appearance';
 import { Modal } from './Modal';
 import { Icon } from './Icon';
+import { useTouch, effectiveDevice, type DeviceChoice } from '../state/touch';
+import { DEVICE_LAYOUTS, useLayout } from '../state/layout';
 
 export function backgroundStyle(p: typeof DEFAULT_APPEARANCE, imageUrl?: string): React.CSSProperties {
   if (p.background === 'color') return { backgroundColor: p.color };
   if (p.background === 'gradient') return { backgroundImage: `linear-gradient(135deg, ${p.color}, ${p.colorEnd})` };
   if (p.background === 'image' && imageUrl) return { backgroundImage: `url("${imageUrl}")`, backgroundSize: 'cover', backgroundPosition: p.position };
   return {};
+}
+
+/** 触控与设备: layout density (auto / 桌面 / 平板 / 手机), pen-vs-finger, fullscreen on first touch. */
+function TouchSettings() {
+  const t = useTouch();
+  const device = effectiveDevice(t);
+  const choose = (d: DeviceChoice) => {
+    t.setPrefs({ device: d });
+    const name = Object.entries(DEVICE_LAYOUTS).find(([, v]) => v === (d === 'auto' ? t.detected : d))?.[0];
+    if (name) useLayout.getState().switchTo(name);
+  };
+  return <section className="settings-section">
+    <div className="section-title"><h3>触控与设备</h3><span className="subtle-badge">当前：{device === 'phone' ? '手机' : device === 'tablet' ? '平板' : '桌面'}{t.penSeen ? ' · 触控笔' : ''}</span></div>
+    <p className="muted">手机与 iPad 会自动切换为触控布局；也可以在「窗口 › 面板布局」选择 iPad 布局或手机布局。</p>
+    <div className="segmented" role="group" aria-label="设备布局">
+      {([['auto', '自动'], ['desktop', '桌面'], ['tablet', '平板'], ['phone', '手机']] as const).map(([d, name]) => (
+        <button key={d} aria-pressed={t.device === d} onClick={() => choose(d)}>{name}</button>
+      ))}
+    </div>
+    <label className="toggle-row"><span><strong>触控笔绘画、手指移动画布</strong><small>检测到触控笔后，单指只平移画布，避免手掌误触；双指缩放，双指轻点撤销</small></span><input type="checkbox" checked={t.penDraws} onChange={(e) => t.setPrefs({ penDraws: e.target.checked })} /></label>
+    <label className="toggle-row"><span><strong>触屏设备进入后自动全屏</strong><small>减少手势滑出页面；iPhone 请用 Safari「添加到主屏幕」</small></span><input type="checkbox" checked={t.autoFullscreen} onChange={(e) => t.setPrefs({ autoFullscreen: e.target.checked })} /></label>
+  </section>;
 }
 
 export function AppearanceSettings() {
@@ -118,6 +142,7 @@ export function AppearanceSettings() {
           <label className="toggle-row"><span><strong>自动进入工作模式</strong><small>点击画布时全屏并锁定键盘，Ctrl/⌘+T、W、N 交给编辑器</small></span><input type="checkbox" aria-label="自动进入工作模式" checked={preferences.autoWorkMode} onChange={(e) => update({ autoWorkMode: e.target.checked })} /></label>
           <label className="toggle-row"><span><strong>低开销模式</strong><small>隐藏装饰背景、Design Agent 星空特效和可选过渡，保留背景设置</small></span><input type="checkbox" checked={preferences.lowOverhead} onChange={(e) => update({ lowOverhead: e.target.checked })} /></label>
         </section>
+        <TouchSettings />
         {error && <p role="alert" className="inline-error">{error}</p>}
       </div>
       <footer className="modal-footer"><span className="muted">{loading ? '正在准备本地资源，请稍候' : '外观偏好保存在此浏览器'}</span><button className="primary" disabled={loading} onClick={close}>完成</button></footer>

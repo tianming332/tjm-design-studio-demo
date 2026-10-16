@@ -30,13 +30,22 @@ export async function geminiSettings(db) {
 
 /** Local edition ships without official styles; a style id resolves only if one was added locally. */
 export async function getStyle(db, id) {
-  const row = await db.get('SELECT id,name,description,system_prompt AS systemPrompt,model,enabled FROM styles WHERE id=? AND enabled=1', [id]);
+  const row = await db.get('SELECT id,name,description,system_prompt AS systemPrompt,model,provider,image_model AS imageModel,enabled FROM styles WHERE id=? AND enabled=1', [id]);
   return row ? { ...row, references: [] } : null;
 }
 
 export async function listStyles(db) {
   const rows = await db.all('SELECT id,name,description FROM styles WHERE enabled=1 ORDER BY id');
   return rows.map(r => ({ ...r, coverUrl: null, tags: [] }));
+}
+
+/** Weighted pick used by the key pools (same rule as the Admin's Gemini project pool). */
+export function pickGeminiProject(items, random = Math.random) {
+  const available = Array.isArray(items) ? items.filter(i => Number(i.weight) > 0) : [];
+  if (!available.length) return null;
+  let point = Math.min(0.999999999, Math.max(0, Number(random()))) * available.reduce((sum, i) => sum + Number(i.weight), 0);
+  for (const item of available) { point -= Number(item.weight); if (point < 0) return item; }
+  return available[available.length - 1];
 }
 
 // Experience codes do not exist locally: the user pays their own vendor directly.

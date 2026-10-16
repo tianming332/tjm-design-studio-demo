@@ -5,7 +5,7 @@ import { geminiSettings, getStyle, reserveAccessUnits, completeReservation, refu
 import { generate, collectImageInputs, buildDirectImagePrompt } from '../upstream.js';
 import { TOOLS, TOOL_BY_NAME, WORKFLOW_PHASES, canonical, digest, stepDigest, targetLayers, validateCall } from './tools.js';
 import { ProviderError } from './gemini.js';
-import { agentRouter, openaiImage, PROVIDER_LABEL } from './providers.js';
+import { agentRouter, vendorImage, decomposeImage, PROVIDER_LABEL } from './providers.js';
 import { mockAgentTurn, mockImage } from './mock.js';
 import * as S from './store.js';
 import { DESIGN_EXECUTION_RULES, needsFinalPreview } from './review.js';
@@ -39,6 +39,13 @@ export function toBase64(bytes) {
   let s = '';
   for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
   return btoa(s);
+}
+/** Steps the server adds on its own (the final full preview) have no model-issued call id: vendors
+ *  reject a tool result for a call they never made, so those results go in as plain text. */
+export const SYNTHETIC_CALL = 'final-preview-';
+export function modelInput(input) {
+  return input.map(i => i.type === 'function_result' && String(i.callId).startsWith(SYNTHETIC_CALL)
+    ? { type: 'text', text: `系统补充执行的 ${i.name} 结果（不是你发起的调用）：${JSON.stringify(i.result)}` } : i);
 }
 const PHASE_LABEL = { analyze: '分析需求', assets: '检查素材', skills: '匹配 Skill' };
 const PROTOCOL = { mock: 'mock', gemini: 'gemini-interactions/v1beta', openai: 'openai-responses/v1', anthropic: 'anthropic-messages/2023-06-01' };
@@ -170,7 +177,7 @@ export function createWorkbench(db, config, opts = {}) {
     t.attempts.push(attempt);
     transition(ctx, 'waiting_model', `调用模型（第 ${t.budget.modelCallsUsed}/${t.budget.modelCalls} 次）`);
     await save(ctx);
-    const turnInput = { provider: t.pinned.provider || 'gemini', model: t.pinned.model, system: `${cfg.systemPrompt}\n\n${DESIGN_EXECUTION_RULES}`, tools: TOOLS, input: priv.pendingInput, previous: priv.handle, state: priv.providerState, projectId: priv.projectId };
+    const turnInput = { provider: t.pinned.provider || 'gemini', model: t.pinned.model, system: `${cfg.systemPrompt}\n\n${DESIGN_EXECUTION_RULES}`, tools: TOOLS, input: modelInput(priv.pendingInput), previous: priv.handle, state: priv.providerState, projectId: priv.projectId };
     let out;
     let failure;
     try { out = isMock ? mockAgentTurn(turnInput, priv.mock) : await provider.agentTurn(turnInput); }
@@ -218,7 +225,7 @@ export function createWorkbench(db, config, opts = {}) {
         }
         event(ctx, 'review-required', '模型准备结束，但预览早于最后一次修改；补充完整画布检查');
         ctx.priv.pendingInput.push({ type: 'text', text: '系统要求：接下来会提供最后修改后的全画布预览，请检查背景覆盖、主体尺寸、文字遮挡及遗漏。不要把中途预览当最终检查。' });
-        await processCalls(ctx, [{ id: `final-preview-${ctx.priv.round}-${ctx.priv.finalPreviewRetries}`, name: 'doc_preview', args: { maxSide: 1024 } }], cfg);
+        await processCalls(ctx, [{ id: `${SYNTHETIC_CALL}${ctx.priv.round}-${ctx.priv.finalPreviewRetries}`, name: 'doc_preview', args: { maxSide: 1024 } }], cfg);
         return true;
       }
       T.resultText = out.text || '（模型未返回说明）';
@@ -292,6 +299,40 @@ export function createWorkbench(db, config, opts = {}) {
       t.phases.analyze = true;
       event(ctx, 'phase', `分析需求：${a.goal}`, { phase: 'analyze', analysis: a });
       return ok({ recorded: true });
+    }
+    if (step.tool === 'report_region') {
+      t.regionAnalysis = a;
+      event(ctx, 'analysis', `分析主体：${a.subject}；光线：${a.lighting}${a.replaceWith ? `；替换为：${a.replaceWith}` : ''}`, { analysis: a });
+      return ok({ recorded: true, note: '生图提示词要写进这些分析：同样的光源方向、透视尺度与接触投影；参考图外圈保持原样以便衔接。' });
+    }
+    if (step.tool === 'report_layers') {
+      t.layerPlan = a;
+      const count = type => a.items.filter(i => i.type === type).length;
+      event(ctx, 'analysis', `拆层规划：${a.items.length} 个元素（文字 ${count('text')}、艺术字 ${count('art-text')}、主体 ${count('subject')}、装饰 ${count('decoration')}、特效 ${count('effect')}、调色 ${count('grade')}）`, { plan: a });
+      return ok({ recorded: true, items: a.items.length });
+    }
+    if (step.tool === 'image_decompose') {
+      if (t.budget.generationsUsed >= t.budget.generations) return fail({ code: 'BUDGET_EXHAUSTED', message: `本任务生图上限 ${t.budget.generations} 次` });
+      const src = await S.assetBytes(db, a.assetId, t.ownerId).catch(() => null);
+      if (!src) return fail({ code: 'NOT_FOUND', message: `素材 ${a.assetId} 不存在` });
+      const [rx, ry, rw, rh] = a.rect;
+      const norm = ([x, y, w, h]) => [(x - rx) / rw * 1000, (y - ry) / rh * 1000, (x + w - rx) / rw * 1000, (y + h - ry) / rh * 1000].map(v => Math.max(0, Math.min(1000, v)));
+      const toDoc = box => box ? [rx + box[0] / 1000 * rw, ry + box[1] / 1000 * rh, (box[2] - box[0]) / 1000 * rw, (box[3] - box[1]) / 1000 * rh].map(Math.round) : a.rect;
+      t.budget.generationsUsed += 1;
+      let out;
+      try {
+        out = isMock
+          ? { layers: [{ mime: src.rec.mime, bytes: src.bytes, zIndex: 0, box: null, name: '背景（模拟）', description: '模拟模式：原图作为背景层' }] }
+          : await decomposeImage(db, config, { model: (await S.workbenchConfig(db)).models.decomposeModel, image: { mime: src.rec.mime, data: toBase64(src.bytes) }, targets: (a.targets || []).map(x => ({ name: x.name, box: norm(x.rect) })) });
+      } catch (error) { return fail(error.wb || { code: 'UPSTREAM_ERROR', message: String(error.message || error) }); }
+      const cfg = await S.workbenchConfig(db);
+      const layers = [];
+      for (const l of out.layers) {
+        const rec = await S.putAsset(db, t.ownerId, { bytes: l.bytes, mime: l.mime, kind: 'generated', name: `拆层 · ${l.name}`.slice(0, 80), source: { decomposedFrom: a.assetId, taskId: t.id, z: l.zIndex, description: l.description } }, cfg.limits);
+        layers.push({ assetId: rec.id, name: l.name, description: l.description, z: l.zIndex, rect: toDoc(l.box), role: l.box ? 'decoration' : 'background' });
+      }
+      event(ctx, 'asset', `AI 拆层完成：${layers.length} 层已存入素材库`, { assetIds: layers.map(l => l.assetId) });
+      return ok({ layers, note: '按 z 从小到大 asset_import(assetId, rect, fit=contain；背景 role=background)。普通文字层改用 text_create 重建并隐藏对应图片层。' });
     }
     if (step.tool === 'assets_list') {
       const assets = (await S.listAssets(db, t.ownerId, 100)).map(r => ({ id: r.id, name: r.name, kind: r.kind, width: r.width, height: r.height, alphaChannel: r.alphaChannel, ...(r.source?.styleName ? { style: r.source.styleName } : {}), ...(r.source?.site ? { site: r.source.site } : {}) }));
@@ -583,9 +624,9 @@ export function createWorkbench(db, config, opts = {}) {
     if (!style) throw wbError('NOT_FOUND', '画风不存在或已停用', 404);
     const reference = refs.length ? await S.assetBytes(db, refs[0], actor.ownerId) : null;
     const gem = await geminiSettings(db);
-    const imageVendor = isMock ? 'mock' : (await S.workbenchConfig(db)).models.imageProvider;
-    const openaiModel = (await S.workbenchConfig(db)).models.openaiImage;
-    const configuredModel = isMock ? 'mock' : imageVendor === 'openai' ? openaiModel : (reference || style.references?.length ? gem.editModel : gem.textModel);
+    const wbModels = (await S.workbenchConfig(db)).models;
+    const imageVendor = isMock ? 'mock' : wbModels.imageProvider;
+    const configuredModel = isMock ? 'mock' : imageVendor !== 'gemini' ? wbModels.imageModel : (reference || style.references?.length ? gem.editModel : gem.textModel);
     if (req.model !== undefined && req.model !== configuredModel) throw wbError('BAD_REQUEST', '该模型不支持当前输入，或「设置 · AI」中的模型已更改', 400);
     const model = req.model || configuredModel;
     if (!model) throw wbError('NOT_CONFIGURED', '请在「设置 · AI」中设置生图模型', 503);
@@ -600,9 +641,9 @@ export function createWorkbench(db, config, opts = {}) {
     try {
       let image;
       if (isMock) image = await mockImage(prompt, req.aspectRatio ? ratioSize(req.aspectRatio) : req.size || '1024x1024');
-      else if (imageVendor === 'openai') {
+      else if (imageVendor !== 'gemini') {
         const input = { prompt, imageDataUrl: reference ? `data:${reference.rec.mime};base64,${toBase64(reference.bytes)}` : null };
-        image = await openaiImage(db, config, { model, prompt: await buildDirectImagePrompt(db, style, input), aspectRatio: req.aspectRatio, images: await collectImageInputs(style, input) });
+        image = await vendorImage(db, config, imageVendor, { model, prompt: await buildDirectImagePrompt(db, style, input), aspectRatio: req.aspectRatio, imageSize: req.imageSize, images: await collectImageInputs(style, input) });
       } else {
         const imageDataUrl = reference ? `data:${reference.rec.mime};base64,${toBase64(reference.bytes)}` : null;
         const result = await generate(db, config, style, { prompt, imageDataUrl, geminiApiKey: '' }, { model, aspectRatio: req.aspectRatio, imageSize: req.imageSize });
@@ -677,7 +718,7 @@ export function createWorkbench(db, config, opts = {}) {
     const gem = await geminiSettings(db);
     const option = (id, provider, extra = {}) => ({ id, label: id === 'mock' ? '模拟模型' : id, provider: isMock ? 'mock' : provider, ...extra });
     const imageVendor = cfg.models.imageProvider;
-    const imageIds = isMock ? ['mock'] : imageVendor === 'openai' ? [cfg.models.openaiImage].filter(Boolean) : [...new Set([gem.textModel, gem.editModel].filter(Boolean))];
+    const imageIds = isMock ? ['mock'] : imageVendor !== 'gemini' ? [cfg.models.imageModel].filter(Boolean) : [...new Set([gem.textModel, gem.editModel].filter(Boolean))];
     const configured = isMock || !!cfg.models.agent;
     return {
       protocol: WB_PROTOCOL, applicationId: 'workbench', mode: 'official', mock: isMock,
@@ -686,7 +727,7 @@ export function createWorkbench(db, config, opts = {}) {
       model: isMock ? 'mock' : cfg.models.agent || null, provider: isMock ? 'mock' : cfg.models.agentProvider, verified: !isMock && verifiedAgent(cfg),
       models: {
         agent: configured ? [option(isMock ? 'mock' : cfg.models.agent, cfg.models.agentProvider)] : [],
-        image: imageIds.map(id => option(id, imageVendor, imageVendor === 'openai' ? { supportsText: true, supportsReferences: true } : { supportsText: isMock || id === gem.textModel, supportsReferences: isMock || id === gem.editModel })),
+        image: imageIds.map(id => option(id, imageVendor, imageVendor !== 'gemini' ? { supportsText: true, supportsReferences: imageVendor !== 'glm' } : { supportsText: isMock || id === gem.textModel, supportsReferences: isMock || id === gem.editModel })),
       },
       imageOptions: { aspectRatios: ASPECT_RATIOS, imageSizes: IMAGE_SIZES },
       imageEnabled: cfg.enabled && imageIds.length > 0 && !!actor.issueId,

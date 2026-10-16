@@ -43,6 +43,7 @@
 | **デザイン Agent** | 要件分析 → 素材確認 → Skill 選択 → エディタのツールで実行 → プレビューで自己チェック。 |
 | **AI 素材** | テキストから画像、画像から画像。生成結果は素材ライブラリに保存し、そこからキャンバスへ配置。 |
 | **フォント** | 商用利用できる中国語・日本語・欧文フォント 19 種。初めて使うときにダウンロード。 |
+| **タッチ・ペン** | iPad／スマホ用レイアウト、最初のタッチで全画面、ピンチでズーム、2 本指タップで取り消し。ペン使用時はペンで描画、指でキャンバス移動。タッチ描画・タッチ編集のシーンツール付き。 |
 
 ## ⚡ クイックスタート
 
@@ -70,6 +71,13 @@ npm run build          # dist/ に静的サイトを出力
 | Google Gemini | ✅ | ✅ | aistudio.google.com |
 | OpenAI | ✅ | ✅（GPT Image） | platform.openai.com |
 | Anthropic Claude | ✅ | — | console.anthropic.com |
+| Zhipu GLM | ✅ | ✅（CogView） | open.bigmodel.cn |
+| DeepSeek | ✅（テキストのみ） | — | platform.deepseek.com |
+| Alibaba Qwen（百炼） | ✅ | ✅（qwen-image） | bailian.console.aliyun.com |
+| ByteDance Doubao（Ark） | ✅ | ✅（Seedream、AI レイヤー分解） | console.volcengine.com/ark |
+
+> [!NOTE]
+> ブラウザから直接呼び出せるかどうかはプロバイダの CORS 設定によります。「测试」で接続エラーになる場合はブラウザにブロックされている可能性が高いので、別のプロバイダをお使いください。
 
 **AI 制图 → 配置 AI（自带 Key）** を開くか、`Ctrl/⌘+F` で「AI 设置」を検索します。キーを入力してモデルを選び、**能力探测**（接続テスト）で使えることを確認してください。
 
@@ -99,6 +107,6 @@ Issue と PR を歓迎します。PR を出す前に `npm test` と `npm run smo
 - **商標**：TJM の名称、`public/brand/` 内のロゴ、小文字の「tjm」ワードマークは本ライセンスの対象**外**です（Apache-2.0 第 6 条）。フォークや再配布の際は差し替えてください。公認を受けているかのような表示もしないでください。
 - **サードパーティ**：PhotoCraft（MIT と Apache-2.0 のいずれかを選択可能）、vgpu、vgpu-optimized-black-hole、ag-psd、React、zustand、sql.js（MIT）。ライセンス本文は [`third_party/`](third_party) にあります。
 - **フォント**：SIL Open Font License 1.1。ライセンスは各フォントフォルダにあります。商用を含むデザインへの使用や、書き出したファイルへの埋め込みは自由です。ただしフォントファイル単体の販売はできず、改変したフォントで予約フォント名を使うこともできません。
-- **作品と AI 出力**：あなたが作った作品はあなたのものです。AI 生成物には、利用するプロバイダ（Google、OpenAI、Anthropic）の規約も適用されます。API の利用料はあなた自身のアカウントに請求されます。アップロード・取り込みする素材（第三者サイトの画像を含む）については、必要な権利をお持ちであることをご自身でご確認ください。
+- **作品と AI 出力**：あなたが作った作品はあなたのものです。AI 生成物には、利用するプロバイダ（Google、OpenAI、Anthropic、Zhipu、DeepSeek、Alibaba、ByteDance）の規約も適用されます。API の利用料はあなた自身のアカウントに請求されます。アップロード・取り込みする素材（第三者サイトの画像を含む）については、必要な権利をお持ちであることをご自身でご確認ください。
 
 <div align="center"><sub>「生成するだけ」でなく「編集してくれる」AI を求めるデザイナーのために。</sub></div>

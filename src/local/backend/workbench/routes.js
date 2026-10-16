@@ -5,7 +5,8 @@ import { createWorkbench } from './service.js';
 import { TOOLS } from './tools.js';
 import * as S from './store.js';
 import { distillTask } from './distill.js';
-import { AGENT_PROVIDERS, IMAGE_PROVIDERS, publicVendors, saveVendor, discoverModels, modelRegistry, saveModelRegistry } from './providers.js';
+import { AGENT_PROVIDERS, IMAGE_PROVIDERS, publicVendors, discoverModels, modelRegistry, saveModelRegistry } from './providers.js';
+import { saveKey, removeKey } from './keys.js';
 
 const { wbError } = S;
 const instances = new WeakMap();
@@ -87,10 +88,10 @@ export async function workbenchAdminRoutes(request, url, db, config, h) {
     if (body.models) {
       const current = (await S.workbenchConfig(db)).models;
       const next = { ...current };
-      for (const purpose of ['agent', 'vision-review', 'openaiImage']) {
+      for (const purpose of ['agent', 'vision-review', 'openaiImage', 'imageModel', 'decomposeModel']) {
         if (body.models[purpose] === undefined) continue;
         const v = String(body.models[purpose] || '').trim();
-        if (v && !/^[a-zA-Z0-9_.:-]{2,120}$/.test(v)) throw wbError('BAD_REQUEST', `模型名称无效：${v}`);
+        if (v && !/^[a-zA-Z0-9_.:\/-]{2,120}$/.test(v)) throw wbError('BAD_REQUEST', `模型名称无效：${v}`);
         next[purpose] = v;
       }
       if (body.models.agentProvider !== undefined) {
@@ -125,10 +126,11 @@ export async function workbenchAdminRoutes(request, url, db, config, h) {
     return ok(await state());
   }
   const vendorError = e => { throw e.wb ? wbError(e.wb.code, e.wb.message, e.wb.code === 'BAD_REQUEST' ? 400 : 502) : e; };
-  if (p[0] === 'providers' && AGENT_PROVIDERS.includes(p[1]) && !p[2] && m === 'PUT') {
-    await saveVendor(db, p[1], body || {}, config.dataEncryptionKey).catch(vendorError);
-    await h.audit(db, 'workbench.provider.updated', `${p[1]};key=${body?.clearKey ? 'cleared' : 'replaced'}`);
-    return ok(await state());
+  // Key pools: POST adds, PUT /:id updates (name / weight / enabled / replace key), DELETE /:id removes.
+  if (p[0] === 'providers' && AGENT_PROVIDERS.includes(p[1]) && p[2] === 'keys') {
+    if (!p[3] && m === 'POST') { const id = await saveKey(db, p[1], body || {}, config.dataEncryptionKey).catch(vendorError); await h.audit(db, 'provider.key.added', `${p[1]};id=${id}`); return ok(await state()); }
+    if (p[3] && m === 'PUT') { await saveKey(db, p[1], { ...(body || {}), id: Number(p[3]) }, config.dataEncryptionKey).catch(vendorError); await h.audit(db, 'provider.key.updated', `${p[1]};id=${p[3]};key=${body?.apiKey ? 'replaced' : 'kept'}`); return ok(await state()); }
+    if (p[3] && m === 'DELETE') { await removeKey(db, p[1], p[3]); await h.audit(db, 'provider.key.removed', `${p[1]};id=${p[3]}`); return ok(await state()); }
   }
   // Lists the official models with the saved key: the key test and the model picker in one call.
   if (p[0] === 'providers' && AGENT_PROVIDERS.includes(p[1]) && p[2] === 'models' && m === 'POST') {

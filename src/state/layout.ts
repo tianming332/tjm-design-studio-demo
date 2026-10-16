@@ -50,7 +50,20 @@ export const PRESETS: Record<string, Layout> = {
     floating: [{ id: 'g-adj', panels: ['adjustments'], active: 'adjustments', x: 80, y: 120, w: 300, h: 420 }],
     toolbarSide: 'left', dockSide: 'right',
   },
+  // Touch layouts also switch the UI density (state/touch.ts → touch.css).
+  'iPad 布局': {
+    dock: [
+      { id: 'g-main', panels: ['task', 'properties', 'adjustments', 'assets', 'more'], active: 'task' },
+      { id: 'g-layers', panels: ['layers', 'history'], active: 'layers' },
+    ],
+    floating: [], toolbarSide: 'left', dockSide: 'right',
+  },
+  '手机布局': {
+    dock: [{ id: 'g-main', panels: ['task', 'layers', 'properties', 'adjustments', 'assets', 'history', 'more'], active: 'task' }],
+    floating: [], toolbarSide: 'left', dockSide: 'right',
+  },
 };
+export const DEVICE_LAYOUTS: Record<string, 'tablet' | 'phone'> = { 'iPad 布局': 'tablet', '手机布局': 'phone' };
 export const DEFAULT_WORKSPACE = '基本功能';
 
 const clone = (l: Layout): Layout => JSON.parse(JSON.stringify(l));

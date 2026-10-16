@@ -43,6 +43,7 @@
 | **设计 Agent** | 分析需求 → 检查素材 → 匹配 Skill → 用编辑器工具执行 → 预览自检。 |
 | **AI 素材** | 文生图、图生图，结果进入素材库，再放到画布上。 |
 | **字体库** | 19 套可商用的中日英字体，第一次用到时才下载。 |
+| **触屏与触控笔** | iPad／手机布局，首次触摸自动全屏，双指缩放，双指轻点撤销；使用触控笔时笔画画、手指移动画布。场景工具含「触摸绘图」「触摸编辑」。 |
 
 ## ⚡ 快速开始
 
@@ -70,6 +71,13 @@ npm run build          # 生成静态站点到 dist/
 | Google Gemini | ✅ | ✅ | aistudio.google.com |
 | OpenAI | ✅ | ✅（GPT Image） | platform.openai.com |
 | Anthropic Claude | ✅ | — | console.anthropic.com |
+| 智谱 GLM | ✅ | ✅（CogView） | open.bigmodel.cn |
+| DeepSeek | ✅（仅文本） | — | platform.deepseek.com |
+| 通义千问（百炼） | ✅ | ✅（qwen-image） | bailian.console.aliyun.com |
+| 豆包（火山方舟） | ✅ | ✅（Seedream、AI 拆层） | console.volcengine.com/ark |
+
+> [!NOTE]
+> 服务商能否在浏览器里直接调用取决于它的跨域（CORS）策略；「测试」报连接失败时多半是被浏览器拦截，请换用其他服务商。
 
 打开 **AI 制图 → 配置 AI（自带 Key）**，或按 `Ctrl/⌘+F` 搜索「AI 设置」。填好 Key、选好模型后，点 **能力探测** 确认可用。
 
@@ -99,6 +107,6 @@ public/fonts/            字体及各自的 OFL 许可
 - **商标**：TJM 名称、`public/brand/` 中的标志以及小写「tjm」字标**不在**本协议授权范围内（Apache-2.0 第 6 条）。Fork 或再分发时必须替换，也不得暗示得到了我们的认可。
 - **第三方代码**：PhotoCraft（MIT 或 Apache-2.0 二选一），以及 vgpu、vgpu-optimized-black-hole、ag-psd、React、zustand、sql.js（均为 MIT）。许可原文见 [`third_party/`](third_party)。
 - **字体**：SIL Open Font License 1.1，许可文件放在每个字体目录里。可以免费用于设计作品，包括商用和嵌入导出文件；但不能单独出售字体文件，修改后的字体不能沿用保留的字体名称。
-- **你的作品与 AI 内容**：你创作的内容归你所有。AI 生成内容还要遵守你所用服务商（Google、OpenAI、Anthropic）的使用条款，接口费用由你自己的账户支付。你上传或导入的素材（包括来自第三方网站的图片）需要你自己确认拥有相应权利。
+- **你的作品与 AI 内容**：你创作的内容归你所有。AI 生成内容还要遵守你所用服务商（Google、OpenAI、Anthropic、智谱、DeepSeek、阿里云、字节跳动）的使用条款，接口费用由你自己的账户支付。你上传或导入的素材（包括来自第三方网站的图片）需要你自己确认拥有相应权利。
 
 <div align="center"><sub>为想要「AI 帮我改图」而不只是「AI 帮我生图」的设计师而做。</sub></div>

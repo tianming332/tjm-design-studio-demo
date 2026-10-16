@@ -1,9 +1,10 @@
 import { create } from 'zustand';
 import { useStore } from './store';
 import { useAppearance } from './appearance';
-import { showPanel, useLayout, type PanelId } from './layout';
+import { showPanel, useLayout, DEVICE_LAYOUTS, type PanelId } from './layout';
 import type { AIOutput } from '../ai/creation';
 import { useStudioLayout } from './studioLayout';
+import { useTouch } from './touch';
 
 export type CreationMode = 'design' | 'manual';
 export type AgentSide = 'left' | 'right';
@@ -68,7 +69,11 @@ export function selectEditScene(id: string) {
   openPanel(id === 'edit' ? 'properties' : 'task');
 }
 /** Layout choices are independent from creation mode. */
-export function selectPanelLayout(name: string) { useLayout.getState().switchTo(name); }
+export function selectPanelLayout(name: string) {
+  useLayout.getState().switchTo(name);
+  // iPad / 手机 layouts also switch the touch UI; other layouts go back to following the device.
+  useTouch.getState().setPrefs({ device: DEVICE_LAYOUTS[name] ?? 'auto' });
+}
 export function resetPanelLayout() {
   if (useNavigation.getState().mode === 'design') { useStudioLayout.getState().reset(); setAgentSide('right'); }
   else useLayout.getState().reset();

@@ -109,4 +109,7 @@ export function captureRect(sel: { x: number; y: number; w: number; h: number },
 }
 
 /** Limit `layer` to the current selection (a generated patch placed over the original). */
-export const regionMaskBatch = (a: { layer: number }): Batch => [{ cmd: 'layer.select', params: { layer: a.layer, mode: 'replace' } }, { cmd: 'layer.layerMask.revealSelection', params: { layer: a.layer } }];
+/** feather softens the selection first, so a generated patch fades into its surroundings. */
+export const regionMaskBatch = (a: { layer: number; feather?: number }): Batch => [
+  ...(a.feather ? regionRefineBatch({ feather: Math.min(250, Math.max(0, a.feather)) }) : []),
+  { cmd: 'layer.select', params: { layer: a.layer, mode: 'replace' } }, { cmd: 'layer.layerMask.revealSelection', params: { layer: a.layer } }];
