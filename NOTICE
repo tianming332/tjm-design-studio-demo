@@ -1,0 +1,28 @@
+TJM Design Studio (demo)
+Copyright 2026 TJM
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Trademarks
+----------
+The TJM name and the logos in public/brand/ (tjm-ai-logo.png, tjm-logo.png,
+tjm-logo-white.png) and the lowercase "tjm" wordmark are trademarks of TJM.
+They are NOT licensed under the Apache License. Forks must replace them.
+
+Third-party software (license texts in third_party/)
+-----------------------------------------------------
+- PhotoCraft engine v0.6.0 (compiled into src/engine/pkg/*.wasm)
+  https://github.com/storytold/photocraft — MIT OR Apache-2.0
+- vgpu-optimized-black-hole (shader approach of src/ai/blackhole/) — MIT, Copyright (c) 2025 Vercel, Inc.
+- vgpu — MIT
+- ag-psd — MIT
+- React, React DOM — MIT
+- zustand — MIT
+- sql.js — MIT
+
+Fonts (public/fonts/lib/*, each folder carries its OFL.txt)
+-----------------------------------------------------------
+SIL Open Font License 1.1: Noto Sans SC, Noto Serif SC, Noto Sans JP, ZCOOL XiaoWei,
+ZCOOL KuaiLe, ZCOOL QingKe HuangYou, Ma Shan Zheng, Long Cang, M PLUS Rounded 1c,
+Zen Maru Gothic, Dela Gothic One, Montserrat, Playfair Display, Oswald, Bebas Neue,
+Anton, Pacifico, Lobster, Caveat.

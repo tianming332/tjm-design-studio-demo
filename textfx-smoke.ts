@@ -1,0 +1,141 @@
+// Real-engine check for the agent's text-effect tools: preset + warp, 立体字 build and rebuild.
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { chromium } from 'playwright';
+import { createServer } from 'vite';
+const root=path.dirname(fileURLToPath(import.meta.url)),out=path.resolve(root,'test-output/textfx');fs.mkdirSync(out,{recursive:true});
+const server=await createServer({root,server:{host:'127.0.0.1',port:5197,strictPort:true}});await server.listen();
+const browser=await chromium.launch({channel:'chrome',headless:true});const page=await (await browser.newContext({viewport:{width:1600,height:1000}})).newPage();
+const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+await page.addInitScript(()=>{(window as any).__name=(f:unknown)=>f;});
+await page.route('**/api/**',route=>route.fulfill({json:{data:{}}}));
+const idle=()=>page.waitForFunction(()=>{const s=(window as any).__tjm.getState();return s.doc&&!s.busy&&s.render.nonce===s.paintedNonce;},undefined,{timeout:120000});
+try {
+  await page.goto('http://127.0.0.1:5197');
+  await page.evaluate(()=>(window as any).__tjm.getState().newDocument(1200,800));await idle();
+  const r=await page.evaluate(async()=>{
+    const {EditorBridge}=await import('/src/ai/bridge.ts');const st=(window as any).__tjm;const s=st.getState().session;
+    const bridge=new EditorBridge({session:()=>s,afterEdit:async()=>{await st.getState().refresh?.();},assetBytes:async()=>({bytes:new ArrayBuffer(0),mime:'image/png'}),encodePng:async()=>({dataUrl:'',width:1,height:1})});
+    const task={id:'fx',runId:'r',target:{docId:s.docId}} as any;let n=0;
+    const run=(tool:string,args:any)=>bridge.execute(task,{stepId:`s${n++}`,callId:'c',round:1,tool,args,inputDigest:`d${n}`,where:'client',status:'leased',lease:{id:'l'},observedRevision:s.currentRevision} as any);
+    const bg=await run('fill_solid',{color:'#1d2b53'});
+    const t=await run('text_create',{text:'立体字 SALE',x:150,y:420,size:160,color:'#ffcc33'});
+    const layer=t.result.layers[0];
+    const fx=await run('text_fx_apply',{layer,preset:'gold',warp:{style:'arc',bend:25}});
+    const ex=await run('text_extrude',{layer,sideColor:'#7a4f00',angle:60,depth:30});
+    const info1=await s.inspect();
+    const ex2=await run('text_extrude',{layer,sideColor:'#222222',angle:90,depth:20});
+    const info2=await s.inspect();
+    const clr=await run('text_fx_clear',{layer:999999});
+    return {bg:bg.status,t:t.status,layer,fx,ex,ex2,clr,info1,info2,history:info2.history?.slice(-6)};
+  });
+  for (const k of ['bg','t'] as const) assert.equal(r[k],'ok',k);
+  assert.equal(r.fx.status,'ok',JSON.stringify(r.fx.error));
+  assert.equal(r.ex.status,'ok',JSON.stringify(r.ex.error));
+  const find=(ls:any[],id:number):any=>{for(const l of ls){if(l.id===id)return l;const c=l.children&&find(l.children,id);if(c)return c;}};
+  const group=find(r.info1.layers,r.ex.result.group);
+  assert.ok(group?.name.startsWith('立体字'),`group ${group?.name}`);
+  assert.equal(group.children[0].id,r.layer,'face stays on top');
+  assert.equal(group.children[0].kind,'Type');assert.equal(group.children[0].text.text,'立体字 SALE');
+  assert.ok(group.children[0].effects.items.length>=3,'gold effects on face');
+  assert.equal(group.children.length-1,r.ex.result.slices.length);
+  const g2=find(r.info2.layers,r.ex2.result.group);
+  assert.equal(r.ex2.result.group,r.ex.result.group,'rebuild reuses the group');
+  assert.equal(g2.children.length-1,r.ex2.result.slices.length,'old slices removed');
+  assert.equal(r.clr.status,'error');
+  const png=await page.evaluate(async()=>{const {bytes}=await (window as any).__tjm.getState().session.save('png');let s='';const u=new Uint8Array(bytes);for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode(...u.subarray(i,i+0x8000));return btoa(s);});
+  fs.writeFileSync(path.join(out,'agent-extrude.png'),Buffer.from(png,'base64'));
+  console.log('PASS preset+warp, extrude, rebuild', JSON.stringify({slices:r.ex.result.slices.length,rebuilt:r.ex2.result.slices.length,history:r.history}));
+
+  // 智能选区 + AI 操作 through the agent's region tools on a real photo-like layer.
+  await page.evaluate(()=>(window as any).__tjm.getState().newDocument(800,600));await idle();
+  const g=await page.evaluate(async()=>{
+    const {EditorBridge}=await import('/src/ai/bridge.ts');const st=(window as any).__tjm;const s=st.getState().session;
+    const c=document.createElement('canvas');c.width=800;c.height=600;const x=c.getContext('2d')!;x.fillStyle='#3a6ea5';x.fillRect(0,0,800,600);x.fillStyle='#e8402a';x.beginPath();x.arc(400,300,140,0,7);x.fill();
+    const bytes=await (await fetch(c.toDataURL('image/png'))).arrayBuffer();
+    const bridge=new EditorBridge({session:()=>s,afterEdit:async()=>{},assetBytes:async()=>({bytes,mime:'image/png'}),encodePng:async()=>({dataUrl:'',width:1,height:1})});
+    const task={id:'rg',runId:'r',target:{docId:s.docId}} as any;let n=0;
+    const run=(tool:string,args:any)=>bridge.execute(task,{stepId:`g${n++}`,callId:'c',round:1,tool,args,inputDigest:`g${n}`,where:'client',status:'leased',lease:{id:'l'},observedRevision:s.currentRevision} as any);
+    const imp=await run('asset_import',{assetId:'photo',role:'background',name:'照片'});
+    const photo=imp.result.layer;
+    const sel=await run('region_select',{method:'object',rect:[220,120,360,360]});
+    const read=await run('doc_read',{});
+    const refine=await run('region_refine',{feather:1,smooth:10});
+    const adj=await run('adjust_apply',{kind:'hueSaturation',hue:120});
+    const cut=await run('region_apply',{op:'cutout',layer:photo});
+    const rem=await run('region_apply',{op:'remove',layer:photo});
+    const subj=await run('region_select',{method:'subject'});
+    const after=await run('doc_read',{});
+    await st.getState().refreshSelection();
+    return {imp:imp.status,sel:sel.status,selection:read.result.selection,refine:refine.status,adj,cut,rem,subj:subj.status,subjectSel:after.result.selection,layers:after.result.layers.map((l:any)=>`${l.kind}:${l.name}`)};
+  });
+  for (const k of ['imp','sel','refine','subj'] as const) assert.equal(g[k],'ok',k);
+  for (const k of ['adj','cut','rem'] as const) assert.equal(g[k].status,'ok',`${k} ${JSON.stringify(g[k].error)}`);
+  const near=(a:number,b:number,t=24)=>Math.abs(a-b)<=t;
+  assert.ok(g.selection&&near(g.selection.x,260)&&near(g.selection.y,160)&&near(g.selection.w,280)&&near(g.selection.h,280),`object selection ${JSON.stringify(g.selection)}`);
+  assert.ok(g.subjectSel,'subject selection');
+  assert.equal(g.layers.length,5,JSON.stringify(g.layers));
+  assert.ok(g.layers.some((l:string)=>l.startsWith('Adjustment')),'adjustment layer');
+  await page.waitForSelector('[data-testid=selection-actions]',{timeout:5000});
+  const bar=await page.locator('[data-testid=selection-actions] button').allInnerTexts();
+  assert.deepEqual(bar,['识别物体','抠出','移除','交给 Agent']);
+  await page.screenshot({path:path.join(out,'selection-actions.png')});
+  console.log('PASS region select/refine/adjust/cutout/remove + action bar', JSON.stringify({selection:g.selection,subject:g.subjectSel,layers:g.layers}));
+
+  // Layout, lint, filters and the generative-region plumbing (capture → place at rect → mask).
+  await page.evaluate(()=>(window as any).__tjm.getState().newDocument(1000,800));await idle();
+  const l=await page.evaluate(async()=>{
+    const {EditorBridge}=await import('/src/ai/bridge.ts');const st=(window as any).__tjm;const s=st.getState().session;
+    const c=document.createElement('canvas');c.width=300;c.height=300;const x=c.getContext('2d')!;x.fillStyle='#2b8a3e';x.fillRect(0,0,300,300);
+    const patch=await (await fetch(c.toDataURL('image/png'))).arrayBuffer();const uploads:string[]=[];
+    const bridge=new EditorBridge({session:()=>s,afterEdit:async()=>{},assetBytes:async()=>({bytes:patch,mime:'image/png'}),encodePng:async(px:any)=>({dataUrl:`data:image/png;base64,x${px.width}x${px.height}`,width:px.width,height:px.height}),uploadAsset:async(d:string)=>{uploads.push(d);return {id:'cap1'};}});
+    const task={id:'ly',runId:'r',target:{docId:s.docId}} as any;let n=0;
+    const run=(tool:string,args:any)=>bridge.execute(task,{stepId:`l${n++}`,callId:'c',round:1,tool,args,inputDigest:`l${n}`,where:'client',status:'leased',lease:{id:'l'},observedRevision:s.currentRevision} as any);
+    await run('fill_solid',{color:'#f4efe6'});
+    const big=(await run('text_create',{text:'一行很长很长的促销标题文字',x:900,y:300,size:160,color:'#f0e8dc'})).result.layers[0];
+    const sub=(await run('text_create',{text:'副标题',x:100,y:310,size:60,color:'#222222'})).result.layers[0];
+    const lint1=await run('doc_lint',{});
+    const lay=await run('layout_apply',{items:[{layer:big,box:[0.1,0.1,0.8,0.2],align:'center'},{layer:sub,box:[0.1,0.35,0.8,0.1],align:'center'}]});
+    await run('text_style',{layer:big,color:'#222222'});
+    const lint2=await run('doc_lint',{});
+    const fit=await run('text_fit',{layer:sub,box:[100,600,300,40],align:'left'});
+    const sel=await run('region_select',{method:'rect',rect:[400,400,200,200]});
+    const cap=await run('region_capture',{});
+    const imp=await run('asset_import',{assetId:'cap1',role:'subject',fit:'cover',rect:cap.result.rect});
+    const mask=await run('region_mask',{layer:imp.result.layer});
+    const filt=await run('filter_apply',{filter:'filter.blur.gaussianBlur',layer:imp.result.layer,values:{radius:3}});
+    const info=await s.inspect();
+    return {lint1:lint1.result.issues.map((i:any)=>i.code),lint2:lint2.result,lay,fit:fit.result,sel:sel.status,cap:cap.result,capErr:cap.error,uploads:uploads.length,imp:imp.result,mask:mask.status,maskErr:mask.error,filt:filt.status,filtErr:filt.error,patch:info.layers.find((x:any)=>x.id===imp.result?.layer)};
+  });
+  assert.ok(l.lint1.includes('OUT_OF_CANVAS')&&l.lint1.includes('LOW_CONTRAST'),JSON.stringify(l.lint1));
+  assert.equal(l.lay.status,'ok',JSON.stringify(l.lay.error));
+  assert.ok(l.lay.result.placed.every((p:any)=>p.fits),JSON.stringify(l.lay.result));
+  assert.equal(l.lint2.ok,true,JSON.stringify(l.lint2.issues));
+  assert.ok(l.fit.fits&&Math.abs(l.fit.bounds[0]-100)<=2,JSON.stringify(l.fit));
+  assert.ok(l.cap,JSON.stringify(l.capErr));assert.equal(l.cap.aspectRatio,'1:1');assert.deepEqual(l.cap.rect,[350,350,300,300]);assert.equal(l.uploads,1);
+  assert.deepEqual(l.imp.bounds,[350,350,300,300]);
+  assert.equal(l.mask,'ok',JSON.stringify(l.maskErr));assert.equal(l.filt,'ok',JSON.stringify(l.filtErr));assert.equal(l.patch.hasMask,true);
+  console.log('PASS layout_apply/text_fit/doc_lint/region_capture/region_mask/filter_apply',JSON.stringify({lint1:l.lint1,lint2:l.lint2.issues.map((i:any)=>i.code),placed:l.lay.result.placed.map((p:any)=>p.bounds),cap:l.cap.rect}));
+
+  // Font library: listed before download, loaded on first use, available to later engine Workers too.
+  const f=await page.evaluate(async()=>{
+    const {EditorBridge}=await import('/src/ai/bridge.ts');const st=(window as any).__tjm;const s=st.getState().session;
+    const bridge=new EditorBridge({session:()=>s,afterEdit:async()=>{},assetBytes:async()=>({bytes:new ArrayBuffer(0),mime:'image/png'}),encodePng:async()=>({dataUrl:'',width:1,height:1})});
+    const task={id:'ft',runId:'r',target:{docId:s.docId}} as any;let n=0;
+    const run=(tool:string,args:any)=>bridge.execute(task,{stepId:`f${n++}`,callId:'c',round:1,tool,args,inputDigest:`f${n}`,where:'client',status:'leased',lease:{id:'l'},observedRevision:s.currentRevision} as any);
+    const before=await s.typeFonts();
+    const list=await run('font_list',{script:'zh',tag:'书法'});
+    const t=await run('text_create',{text:'书法标题',x:100,y:200,size:96,font:'Ma Shan Zheng'});
+    const after=await s.typeFonts();
+    const info=await s.inspect();
+    const layer=info.layers.find((l:any)=>l.id===t.result.layers[0]);
+    await st.getState().newDocument(400,300);
+    const s2=st.getState().session;
+    return {before:before.includes('Ma Shan Zheng'),list:list.result.library.map((x:any)=>x.family),t:t.status,after:after.includes('Ma Shan Zheng'),font:layer?.text?.font,second:s2!==s&&(await s2.typeFonts()).includes('Ma Shan Zheng')};
+  });
+  assert.equal(f.before,false);assert.deepEqual(f.list,['Ma Shan Zheng']);assert.equal(f.t,'ok');assert.equal(f.after,true);assert.equal(f.font,'Ma Shan Zheng');assert.equal(f.second,true);
+  console.log('PASS font library: font_list, load on first use, new engine gets it',JSON.stringify(f));
+  assert.deepEqual(errors,[]);
+} finally { await browser.close(); await server.close(); }

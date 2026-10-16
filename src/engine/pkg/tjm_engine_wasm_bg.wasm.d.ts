@@ -1,0 +1,35 @@
+/* tslint:disable */
+/* eslint-disable */
+export const memory: WebAssembly.Memory;
+export const __wbg_engine_free: (a: number, b: number) => void;
+export const engine_add_font: (a: number, b: number, c: number) => [number, number];
+export const engine_close: (a: number, b: number, c: number) => [number, number];
+export const engine_gpu_available: (a: number) => number;
+export const engine_init_gpu: (a: number) => any;
+export const engine_last_save_info: (a: number) => [number, number];
+export const engine_new: () => number;
+export const engine_open: (a: number, b: number, c: number, d: number, e: number) => [number, number];
+export const engine_render_gpu: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => any;
+export const engine_render_layer_split: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number) => [number, number];
+export const engine_render_region: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number];
+export const engine_render_rgba: (a: number, b: number, c: number, d: number) => [number, number];
+export const engine_request: (a: number, b: number, c: number) => [number, number];
+export const engine_reset: (a: number) => void;
+export const engine_save: (a: number, b: number, c: number, d: number, e: number) => [number, number];
+export const engine_selection_mask: (a: number, b: number, c: number) => [number, number];
+export const engine_set_budget: (a: number, b: number) => void;
+export const engine_stats: (a: number) => [number, number];
+export const wasm_bindgen_d39e73e53fb0403b___convert__closures_____invoke___js_sys_3b325ea0c66951b3___Function_fn_wasm_bindgen_d39e73e53fb0403b___JsValue_____wasm_bindgen_d39e73e53fb0403b___sys__Undefined___js_sys_3b325ea0c66951b3___Function_fn_wasm_bindgen_d39e73e53fb0403b___JsValue_____wasm_bindgen_d39e73e53fb0403b___sys__Undefined_______true_: (a: number, b: number, c: any, d: any) => void;
+export const wasm_bindgen_d39e73e53fb0403b___convert__closures_____invoke___wasm_bindgen_d39e73e53fb0403b___JsValue__core_608f92abc48d28da___result__Result_____wasm_bindgen_d39e73e53fb0403b___JsError___true_: (a: number, b: number, c: any) => [number, number];
+export const wasm_bindgen_d39e73e53fb0403b___convert__closures_____invoke___wasm_bindgen_d39e73e53fb0403b___sys__JsNullable_wgpu_c76cc0e3f2e8b911___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_608f92abc48d28da___result__Result_____wasm_bindgen_d39e73e53fb0403b___JsError___true_: (a: number, b: number, c: any) => [number, number];
+export const wasm_bindgen_d39e73e53fb0403b___convert__closures_____invoke___wasm_bindgen_d39e73e53fb0403b___sys__JsNullable_wgpu_c76cc0e3f2e8b911___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_608f92abc48d28da___result__Result_____wasm_bindgen_d39e73e53fb0403b___JsError___true__20: (a: number, b: number, c: any) => [number, number];
+export const wasm_bindgen_d39e73e53fb0403b___convert__closures_____invoke___wasm_bindgen_d39e73e53fb0403b___sys__JsNullable_wgpu_c76cc0e3f2e8b911___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_608f92abc48d28da___result__Result_____wasm_bindgen_d39e73e53fb0403b___JsError___true__21: (a: number, b: number, c: any) => [number, number];
+export const __wbindgen_malloc: (a: number, b: number) => number;
+export const __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
+export const __wbindgen_exn_store: (a: number) => void;
+export const __externref_table_alloc: () => number;
+export const __wbindgen_externrefs: WebAssembly.Table;
+export const __wbindgen_destroy_closure: (a: number, b: number) => void;
+export const __wbindgen_free: (a: number, b: number, c: number) => void;
+export const __externref_table_dealloc: (a: number) => void;
+export const __wbindgen_start: () => void;

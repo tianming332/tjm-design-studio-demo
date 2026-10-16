@@ -1,0 +1,57 @@
+[package]
+name = "tjm-engine-wasm"
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+publish = false
+description = "TJM workbench: WASM bridge over the PhotoCraft engine with the tjm/0 JSON protocol"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+# Own workspace: PhotoCraft crates are consumed read-only by path from vendor/ (pinned at v0.6.0).
+[workspace]
+
+[dependencies]
+photocraft-engine = { path = "../../vendor/photocraft/crates/engine" }
+photocraft-io = { path = "../../vendor/photocraft/crates/io" }
+photocraft-format = { path = "../../vendor/photocraft/crates/format" }
+photocraft-compose = { path = "../../vendor/photocraft/crates/compose" }
+photocraft-codecs = { path = "../../vendor/photocraft/crates/codecs" }
+photocraft-doc = { path = "../../vendor/photocraft/crates/doc" }
+photocraft-geom = { path = "../../vendor/photocraft/crates/geom" }
+photocraft-text = { path = "../../vendor/photocraft/crates/text" }
+photocraft-gpu = { path = "../../vendor/photocraft/crates/gpu" }
+photocraft-raster = { path = "../../vendor/photocraft/crates/raster" }
+wgpu = { version = "30", default-features = false, features = ["std", "wgsl", "webgpu"] }
+half = "2"
+futures-channel = "0.3"
+serde_json = "1"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = "=0.2.129"
+wasm-bindgen-futures = "0.4"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+
+# Mirrors PhotoCraft's wasm-release profile (size-optimised, pixel crates at full speed).
+[profile.wasm-release]
+inherits = "release"
+opt-level = "s"
+lto = "fat"
+[profile.wasm-release.package."*"]
+opt-level = "s"
+[profile.wasm-release.package.photocraft-raster]
+opt-level = 3
+[profile.wasm-release.package.photocraft-color]
+opt-level = 3
+[profile.wasm-release.package.photocraft-cms]
+opt-level = 3
+[profile.wasm-release.package.photocraft-compose]
+opt-level = 3
+[profile.wasm-release.package.photocraft-algo]
+opt-level = 3
+[profile.wasm-release.package.photocraft-paint]
+opt-level = 3

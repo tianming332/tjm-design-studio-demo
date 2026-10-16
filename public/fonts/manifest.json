@@ -1,0 +1,299 @@
+{
+  "version": 1,
+  "note": "可商用开源字体（SIL OFL 1.1），许可证在各字体目录 OFL.txt；首次使用时按需下载。",
+  "fonts": [
+    {
+      "family": "Noto Sans SC",
+      "label": "思源黑体（默认）",
+      "file": "NotoSansSC-Regular.otf",
+      "script": "zh",
+      "tags": [
+        "黑体",
+        "无衬线",
+        "正文",
+        "标题",
+        "默认"
+      ],
+      "license": "SIL OFL 1.1",
+      "licenseFile": "NotoSansSC-LICENSE.txt",
+      "bytes": 8331336
+    },
+    {
+      "family": "Noto Serif SC",
+      "label": "思源宋体",
+      "file": "lib/notoserifsc/NotoSerifSC[wght].ttf",
+      "script": "zh",
+      "tags": [
+        "宋体",
+        "衬线",
+        "正文",
+        "标题",
+        "文艺",
+        "高端"
+      ],
+      "license": "SIL OFL 1.1",
+      "licenseFile": "lib/notoserifsc/OFL.txt",
+      "bytes": 25125512,
+      "variable": true
+    },
+    {
+      "family": "ZCOOL XiaoWei",
+      "label": "站酷小薇",
+      "file": "lib/zcoolxiaowei/ZCOOLXiaoWei-Regular.ttf",
+      "script": "zh",
+      "tags": [
+        "宋体",
+        "衬线",
+        "文艺",
+        "标题"
+      ],
+      "license": "SIL OFL 1.1",
+      "licenseFile": "lib/zcoolxiaowei/OFL.txt",
+      "bytes": 6313808
+    },
+    {
+      "family": "ZCOOL KuaiLe",
+      "label": "站酷快乐体",
+      "file": "lib/zcoolkuaile/ZCOOLKuaiLe-Regular.ttf",
+      "script": "zh",
+      "tags": [
+        "圆体",
+        "可爱",
+        "童趣",
+        "手写",
+        "展示"
+      ],
+      "license": "SIL OFL 1.1",
+      "licenseFile": "lib/zcoolkuaile/OFL.txt",
+      "bytes": 1514968
+    },
+    {
+      "family": "ZCOOL QingKe HuangYou",
+      "label": "站酷庆科黄油体",
+      "file": "lib/zcoolqingkehuangyou/ZCOOLQingKeHuangYou-Regular.ttf",
+      "script": "zh",
+      "tags": [
+        "展示",
+        "粗体",
+        "促销",
+        "潮流",
+        "标题"
+      ],
+      "license": "SIL OFL 1.1",
+      "licenseFile": "lib/zcoolqingkehuangyou/OFL.txt",
+      "bytes": 8328684
+    },
+    {
+      "family": "Ma Shan Zheng",
+      "label": "马善政毛笔楷书",
+      "file": "lib/mashanzheng/MaShanZheng-Regular.ttf",
+      "script": "zh",
+      "tags": [
+        "书法",
+        "毛笔",
+        "国风",
+        "楷书",
+        "标题"
+      ],
+      "license": "SIL OFL 1.1",
+      "licenseFile": "lib/mashanzheng/OFL.txt",
+      "bytes": 5857936
+    },
+    {
+      "family": "Long Cang",
+      "label": "龙藏体",
+      "file": "lib/longcang/LongCang-Regular.ttf",
+      "script": "zh",
+      "tags": [
+        "手写",
+        "行书",
+        "国风",
+        "文艺"
+      ],
+      "license": "SIL OFL 1.1",
+      "licenseFile": "lib/longcang/OFL.txt",
+      "bytes": 5162508
+    },
+    {
+      "family": "Noto Sans JP",
+      "label": "Noto Sans JP（思源黑体 日文）",
+      "file": "lib/notosansjp/NotoSansJP[wght].ttf",
+      "script": "ja",
+      "tags": [
+        "黑体",
+        "无衬线",
+        "正文",
+        "标题"
+      ],
+      "license": "SIL OFL 1.1",
+      "licenseFile": "lib/notosansjp/OFL.txt",
+      "bytes": 9589900,
+      "variable": true
+    },
+    {
+      "family": "Rounded Mplus 1c",
+      "label": "M PLUS Rounded 1c",
+      "file": "lib/mplusrounded1c/MPLUSRounded1c-Regular.ttf",
+      "script": "ja",
+      "tags": [
+        "圆体",
+        "可爱",
+        "正文"
+      ],
+      "license": "SIL OFL 1.1",
+      "licenseFile": "lib/mplusrounded1c/OFL.txt",
+      "bytes": 3389792
+    },
+    {
+      "family": "Zen Maru Gothic",
+      "label": "Zen Maru Gothic",
+      "file": "lib/zenmarugothic/ZenMaruGothic-Regular.ttf",
+      "script": "ja",
+      "tags": [
+        "圆体",
+        "柔和",
+        "正文"
+      ],
+      "license": "SIL OFL 1.1",
+      "licenseFile": "lib/zenmarugothic/OFL.txt",
+      "bytes": 3832756
+    },
+    {
+      "family": "Dela Gothic One",
+      "label": "Dela Gothic One",
+      "file": "lib/delagothicone/DelaGothicOne-Regular.ttf",
+      "script": "ja",
+      "tags": [
+        "展示",
+        "粗体",
+        "标题",
+        "潮流"
+      ],
+      "license": "SIL OFL 1.1",
+      "licenseFile": "lib/delagothicone/OFL.txt",
+      "bytes": 2508848
+    },
+    {
+      "family": "Montserrat",
+      "label": "Montserrat",
+      "file": "lib/montserrat/Montserrat[wght].ttf",
+      "script": "en",
+      "tags": [
+        "无衬线",
+        "几何",
+        "标题",
+        "正文"
+      ],
+      "license": "SIL OFL 1.1",
+      "licenseFile": "lib/montserrat/OFL.txt",
+      "bytes": 744936,
+      "variable": true
+    },
+    {
+      "family": "Playfair Display",
+      "label": "Playfair Display",
+      "file": "lib/playfairdisplay/PlayfairDisplay[wght].ttf",
+      "script": "en",
+      "tags": [
+        "衬线",
+        "高端",
+        "杂志",
+        "标题"
+      ],
+      "license": "SIL OFL 1.1",
+      "licenseFile": "lib/playfairdisplay/OFL.txt",
+      "bytes": 300724,
+      "variable": true
+    },
+    {
+      "family": "Oswald",
+      "label": "Oswald",
+      "file": "lib/oswald/Oswald[wght].ttf",
+      "script": "en",
+      "tags": [
+        "无衬线",
+        "窄体",
+        "标题",
+        "海报"
+      ],
+      "license": "SIL OFL 1.1",
+      "licenseFile": "lib/oswald/OFL.txt",
+      "bytes": 172088,
+      "variable": true
+    },
+    {
+      "family": "Bebas Neue",
+      "label": "Bebas Neue",
+      "file": "lib/bebasneue/BebasNeue-Regular.ttf",
+      "script": "en",
+      "tags": [
+        "展示",
+        "窄体",
+        "大写",
+        "海报",
+        "标题"
+      ],
+      "license": "SIL OFL 1.1",
+      "licenseFile": "lib/bebasneue/OFL.txt",
+      "bytes": 61400
+    },
+    {
+      "family": "Anton",
+      "label": "Anton",
+      "file": "lib/anton/Anton-Regular.ttf",
+      "script": "en",
+      "tags": [
+        "展示",
+        "粗体",
+        "窄体",
+        "海报"
+      ],
+      "license": "SIL OFL 1.1",
+      "licenseFile": "lib/anton/OFL.txt",
+      "bytes": 170812
+    },
+    {
+      "family": "Pacifico",
+      "label": "Pacifico",
+      "file": "lib/pacifico/Pacifico-Regular.ttf",
+      "script": "en",
+      "tags": [
+        "手写",
+        "复古",
+        "可爱"
+      ],
+      "license": "SIL OFL 1.1",
+      "licenseFile": "lib/pacifico/OFL.txt",
+      "bytes": 329380
+    },
+    {
+      "family": "Lobster",
+      "label": "Lobster",
+      "file": "lib/lobster/Lobster-Regular.ttf",
+      "script": "en",
+      "tags": [
+        "手写",
+        "复古",
+        "展示"
+      ],
+      "license": "SIL OFL 1.1",
+      "licenseFile": "lib/lobster/OFL.txt",
+      "bytes": 406076
+    },
+    {
+      "family": "Caveat",
+      "label": "Caveat",
+      "file": "lib/caveat/Caveat[wght].ttf",
+      "script": "en",
+      "tags": [
+        "手写",
+        "随意",
+        "笔记"
+      ],
+      "license": "SIL OFL 1.1",
+      "licenseFile": "lib/caveat/OFL.txt",
+      "bytes": 403648,
+      "variable": true
+    }
+  ]
+}

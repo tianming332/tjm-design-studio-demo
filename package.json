@@ -1,0 +1,38 @@
+{
+  "name": "tjm-design-studio-demo",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "TJM Design Studio — browser graphic editor with an optional design agent (bring your own Gemini / OpenAI / Anthropic key)",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "smoke:textfx": "tsx textfx-smoke.ts",
+    "fonts:manifest": "tsx fonts-manifest.ts",
+    "build:pages": "TJM_BASE=${TJM_BASE:-/tjm-design-studio-demo/} npm run build",
+    "smoke:demo": "tsx demo-smoke.ts"
+  },
+  "dependencies": {
+    "ag-psd": "31.0.3",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "vgpu": "0.6.0",
+    "zustand": "4.5.5",
+    "sql.js": "1.15.0"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "@vitejs/plugin-react": "4.3.3",
+    "binaryen": "132.0.0",
+    "playwright": "1.64.0",
+    "tsx": "4.23.15",
+    "typescript": "5.6.3",
+    "vite": "5.4.10",
+    "vitest": "2.1.5"
+  },
+  "license": "Apache-2.0"
+}
