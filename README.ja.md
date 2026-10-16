@@ -14,7 +14,7 @@
 ![BYOK](https://img.shields.io/badge/AI-%E8%87%AA%E5%88%86%E3%81%AE%E3%82%AD%E3%83%BC-8A2BE2)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#-コントリビュート)
 
-[デモ](#-デモ) · [機能](#-機能) · [クイックスタート](#-クイックスタート) · [AI 設定](#-aiapi-キーは自分で用意) · [ライセンスと著作権](#-ライセンスと著作権)
+[デモ](https://tianming332.github.io/tjm-design-studio-demo/) · [機能](#-機能) · [クイックスタート](#-クイックスタート) · [AI 設定](#-aiapi-キーは自分で用意) · [ライセンスと著作権](#-ライセンスと著作権)
 
 </div>
 
@@ -28,7 +28,7 @@
 
 ## 🚀 デモ
 
-`https://<user>.github.io/tjm-design-studio-demo/`（`main` から GitHub Pages で公開）
+[https://tianming332.github.io/tjm-design-studio-demo/](https://tianming332.github.io/tjm-design-studio-demo/)（`main` から GitHub Pages で公開）
 
 - URL に `?mock=1` を付けると、内蔵のシミュレーションモデルで Agent の流れをひと通り試せます。キーは不要です。
 - Chrome / Edge 113 以上が必要です（キャンバスの合成に WebGPU を使用）。

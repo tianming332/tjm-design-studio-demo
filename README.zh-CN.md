@@ -14,7 +14,7 @@
 ![BYOK](https://img.shields.io/badge/AI-%E8%87%AA%E5%B8%A6%20Key-8A2BE2)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#-参与贡献)
 
-[在线体验](#-在线体验) · [功能](#-功能) · [快速开始](#-快速开始) · [AI 配置](#-ai自带-key) · [协议与版权](#-协议与版权)
+[在线体验](https://tianming332.github.io/tjm-design-studio-demo/) · [功能](#-功能) · [快速开始](#-快速开始) · [AI 配置](#-ai自带-key) · [协议与版权](#-协议与版权)
 
 </div>
 
@@ -28,7 +28,7 @@
 
 ## 🚀 在线体验
 
-`https://<用户名>.github.io/tjm-design-studio-demo/`（由 GitHub Pages 从 `main` 分支发布）
+[https://tianming332.github.io/tjm-design-studio-demo/](https://tianming332.github.io/tjm-design-studio-demo/)（由 GitHub Pages 从 `main` 分支发布）
 
 - 地址后加 `?mock=1`，可以用内置的模拟模型体验完整的 Agent 流程，不需要 Key。
 - 需要 Chrome 或 Edge 113 以上版本（画布用 WebGPU 合成）。

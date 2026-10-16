@@ -14,7 +14,7 @@ English · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
 ![BYOK](https://img.shields.io/badge/AI-bring%20your%20own%20key-8A2BE2)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#-contributing)
 
-[Live demo](#-live-demo) · [Features](#-features) · [Quick start](#-quick-start) · [AI setup](#-ai-bring-your-own-key) · [License](#-license--copyright)
+[Live demo](https://tianming332.github.io/tjm-design-studio-demo/) · [Features](#-features) · [Quick start](#-quick-start) · [AI setup](#-ai-bring-your-own-key) · [License](#-license--copyright)
 
 </div>
 
@@ -28,7 +28,7 @@ No install, no account, no server. Everything runs in your browser tab.
 
 ## 🚀 Live demo
 
-`https://<user>.github.io/tjm-design-studio-demo/` (published by GitHub Pages from `main`).
+[https://tianming332.github.io/tjm-design-studio-demo/](https://tianming332.github.io/tjm-design-studio-demo/) (published by GitHub Pages from `main`).
 
 - Add `?mock=1` to the URL to try the whole agent workflow with a built-in simulated model. You don't need a key.
 - Use Chrome or Edge 113+. The canvas is composited with WebGPU.
