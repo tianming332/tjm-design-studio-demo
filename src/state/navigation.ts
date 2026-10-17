@@ -9,20 +9,18 @@ import { useTouch } from './touch';
 export type CreationMode = 'design' | 'manual';
 export type AgentSide = 'left' | 'right';
 export type StudioPanel = Exclude<PanelId, 'generate'>;
-const KEY = 'tjm.creation-mode.v2';
 const STUDIO_KEY = 'tjm.ai-studio.v1';
 export function parseStudio(raw: unknown): { output: AIOutput; agentSide: AgentSide } {
   const p = raw && typeof raw === 'object' ? raw as Record<string, unknown> : {};
   return { output: p.output === 'poster' || p.output === 'asset' ? p.output : 'layered', agentSide: p.agentSide === 'left' ? 'left' : 'right' };
 }
 function initial() {
-  let mode: CreationMode = 'design';
+  // Always open in the manual editor, including for returning visitors.
+  const mode: CreationMode = 'manual';
   let studio = parseStudio(null);
   try {
-    const old = localStorage.getItem(KEY);
-    mode = old === 'manual' ? 'manual' : 'design';
     const saved = localStorage.getItem(STUDIO_KEY);
-    studio = saved ? parseStudio(JSON.parse(saved)) : parseStudio(old === 'generate' ? { output: 'asset' } : null);
+    studio = saved ? parseStudio(JSON.parse(saved)) : parseStudio(null);
   } catch { /* storage unavailable */ }
   return { mode, ...studio };
 }
@@ -60,7 +58,6 @@ export function openPanel(panel: PanelId) {
 }
 export function selectCreationMode(mode: CreationMode) {
   useNavigation.setState({ mode, utility: undefined, preview: false, ...(mode === 'design' ? { studioPanel: 'agent' } : {}) });
-  try { localStorage.setItem(KEY, mode); } catch { /* switching still works */ }
   useAppearance.setState({ focus: false, drawerOpen: false });
   if (mode === 'manual') openPanel(useStore.getState().activeWorkspace === 'edit' ? 'properties' : 'task');
 }
