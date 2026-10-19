@@ -17,7 +17,6 @@ import { AISettings, useAISettings } from './components/AISettings';
 import { comboLabel, isBrowserReserved, matchShortcut, shouldBlockBrowser, type ShortcutAction } from './shortcuts';
 import { Toast } from './components/Toast';
 import { CommandPalette, registerShortcutRunner } from './components/CommandPalette';
-import { SiteBrowser } from './components/AssetsPanel';
 import { AIStudio, AIPreviewHeader } from './components/AIStudio';
 import { useNavigation } from './state/navigation';
 import { CanvasTools } from './components/CanvasTools';
@@ -187,7 +186,6 @@ function Workbench() {
       <CommandPalette />
       {settings && <AppearanceSettings />}
       {aiSettings && <AISettings />}
-      <SiteBrowser />
       <ContextMenuHost />
     </div>
   );

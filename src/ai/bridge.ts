@@ -135,6 +135,9 @@ export class EditorBridge {
         : EDIT_BATCH[step.tool](step.args);
       const reply = await session.request(batch, key, { baseRevision: observed });
       const created = reply.results.map((r) => (r.value as { layer?: number } | undefined)?.layer).filter((x): x is number => typeof x === 'number');
+      // New layers land above the editor's selected layer (often Background, under an imported
+      // background image): new text and shapes belong on top of the stack.
+      if (step.tool === 'text_create' || step.tool === 'shape_create') await this.toFront(session, created, key);
       await this.deps.afterEdit(task.target.docId, reply.damage);
       return { ...base, revisionBefore: before, revisionAfter: session.currentRevision, status: 'ok', result: { layers: created }, affectedLayers: [...new Set([...targetLayers(step.args), ...created])] };
     } catch (e) {
@@ -143,6 +146,12 @@ export class EditorBridge {
       const msg = e instanceof Error ? e.message : String(e);
       return fail({ code: /locked/i.test(msg) ? 'LOCKED' : 'ENGINE_ERROR', message: msg.slice(0, 300) }, before);
     }
+  }
+
+  private async toFront(session: DocSession, layers: number[], key: string) {
+    const top = (await session.inspect()).layers?.[0]?.id;
+    const move = layers.filter((l) => l !== top).map((layer) => ({ cmd: 'layer.arrange.bringToFront', params: { layer } }));
+    if (move.length) await session.request(move, `${key}:front`, { baseRevision: session.currentRevision });
   }
 
   private async importAsset(session: DocSession, base: Omit<Receipt, 'revisionBefore' | 'revisionAfter' | 'status'>, step: Step, key: string, before: number, observed: number, info: DocInspect): Promise<Receipt> {

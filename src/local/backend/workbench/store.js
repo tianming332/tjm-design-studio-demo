@@ -396,6 +396,125 @@ export const SEED_SKILLS = [
       '- 尺寸：宽度不超过画布宽度的 15%；四周留白不小于标志高度的 1/2；默认放左上或右下角，不压在主体和标题上。',
       '- 一张图只出现一个 TJM 标志。'
     ].join('\n')
+  },
+  {
+    slug: 'poster-layer-split', category: 'capability', name: '海报分层（保真优先）', triggers: '海报分层,海报拆层,拆成PSD,转PSD,转成可编辑,PSD还原,分层还原,海报转PSD,拆分海报',
+    description: '把一张拍平的海报还原成可编辑工程：背景干净、元素完整、文字可改；拆不干净的宁可整块保留，并说明原因。',
+    tools: ['doc_read', 'doc_preview', 'font_list', 'report_layers', 'region_capture', 'image_decompose', 'asset_import', 'region_select', 'region_refine', 'region_apply', 'region_mask', 'text_create', 'text_style', 'text_fx_apply', 'shape_create', 'fill_solid', 'adjust_apply', 'layer_props', 'layer_group', 'layer_arrange', 'layer_move', 'doc_lint'],
+    body: [
+      '# 海报分层（保真优先）',
+      '原则：还原度优先于可编辑度。只拆能干净分离的元素；毛边、白边黑边、透明破洞比少几个图层更糟。',
+      '## 1. 先盘点，再动手',
+      '- doc_preview 看全图并分区放大；report_layers 逐个列出元素、外框 rect 与 z，并给每个元素定处理方式：',
+      '  - 重建：背景色／渐变、普通文字、纯色形状、分隔线、徽标底框 → 用 fill_solid／shape_create／text_create 重新做成矢量或文字层。',
+      '  - 抠出：商品、人物、食物、插画、手写字、Logo、有纹理的物体 → region_select(object) 后 region_apply cutout 成独立像素层。',
+      '  - 保留：头发丝、烟雾、光晕、玻璃、软渐变、碎小元素等抠了会坏的 → 留在背景里，在结果说明中列为「未强行拆分」。',
+      '- 文字：先逐字读出内容；拿不准的字以画面为准，并在说明里标出「待确认」，不要猜。',
+      '## 2. 执行',
+      '- 原图层改名「原图（参考）」并 layer_props visible=false 保留，不删除。',
+      '- 有豆包 Key 时先 region_select all → region_capture(pad=0) → image_decompose(targets=要抠出的元素)；没有时走选区：cutout 取元素，同一选区 remove 补出背景。',
+      '- 投影：属于物体的柔和投影跟物体一起抠；落在地面／背景上的投射阴影留在背景层。',
+      '- 不要把原图切成矩形条或方块交差；每个图层必须是一个完整、可单独移动的元素。',
+      '- 图层按用途命名（「标题文字」「主体-商品」「背景-渐变」），不用 Layer 1／2。',
+      '## 3. 检查',
+      '- 背景层单独看：不能有透明洞、重复纹理、涂抹边、白边黑边、残留旧文字；有就缩小拆分范围重做。',
+      '- 叠回去与原图对比：文字一字不差、元素位置重合；layer_group 分为 文字／主体／装饰／背景，原图层在最下方隐藏。',
+      '参考：weaiw/design-to-psd、1499374741-arch/poster-to-editable-psd（MIT），按本工作台工具改写。'
+    ].join('\n')
+  },
+  {
+    slug: 'illustration-layer-split', category: 'capability', name: '绘画／插画分层', triggers: '插画分层,绘画分层,原画拆层,角色拆分,立绘分层,拆插画,画作分层,插画拆层,线稿分离',
+    description: '把一张插画拆成「底板＋贴纸」：场景底板整张补全，角色与道具各自完整、可单独移动；被遮挡的部分原位补画。',
+    tools: ['doc_read', 'doc_preview', 'report_layers', 'region_capture', 'image_decompose', 'image_generate', 'asset_import', 'region_select', 'region_refine', 'region_apply', 'region_mask', 'adjust_apply', 'layer_props', 'layer_group', 'layer_arrange', 'layer_move', 'doc_lint'],
+    body: [
+      '# 绘画／插画分层',
+      '## 1. 规划：底板与贴纸',
+      '- report_layers 先分两类：拿走后场景会缺一块的（天空、地面、墙、远景）属于底板 background；能整体拿起来移动的（角色、动物、道具、前景植物）是贴纸 subject／decoration。',
+      '- 只有真正挡在前面的元素才算遮挡关系；只是相邻、相切的不算。z 从底板 0 往上编。',
+      '- 角色要细拆时按绘制顺序：后发 → 身体 → 衣服 → 脸 → 眼睛 → 前发 → 配饰，每部分一个元素。',
+      '## 2. 执行',
+      '- 优先 image_decompose（需豆包 Key）；否则逐个 region_select(object, rect=元素外框) → region_refine → region_apply cutout。',
+      '- 被遮挡的部分：region_capture 截取该元素（pad 0.3），image_generate 以截图为参考，写明「位置、比例、姿态完全不变，只补全被挡住的部分，背景透明或纯色」；不要让模型重画整个角色，否则比例和姿态会变。',
+      '- 底板：把贴纸都移走后的空场景整张补全（region_apply remove 或以原图为参考 image_generate 一张无角色的场景），不要用很多小补丁拼，补丁会出现色差、清晰度不一和残影。',
+      '- 厚涂、水彩等没有描边的画风不要求线稿层；有清晰描边的画风可以把线稿单独成层（混合模式 multiply）。',
+      '## 3. 检查',
+      '- 每张贴纸单独显示时必须完整（不缺手脚、不带别的元素碎片）；底板上不能残留贴纸的影子或轮廓。',
+      '- 叠回去与原图对比位置与颜色；layer_group 分为 角色／道具／前景／底板，原图隐藏保留在最下方。',
+      '参考：scort1213/scene-sticker-rebuild（MIT）、shitagaki-lab/see-through（Apache-2.0）的图层划分，按本工作台工具改写。'
+    ].join('\n')
+  },
+  {
+    slug: 'design-critique', category: 'capability', name: '平面设计自检与修正', triggers: '设计检查,优化排版,不好看,提升质感,调整版式,自检,美化,更高级,太乱,没重点',
+    description: '按固定顺序审视画面（视觉焦点、层级、字号、网格、留白、配色、可读性），每轮只改最弱的一处再预览。',
+    tools: ['doc_read', 'doc_preview', 'doc_lint', 'font_list', 'text_style', 'text_fit', 'layout_apply', 'layer_move', 'layer_align', 'layer_props', 'layer_arrange', 'text_fx_apply', 'text_fx_clear', 'shape_create', 'fill_solid', 'adjust_apply'],
+    body: [
+      '# 平面设计自检与修正',
+      '先 doc_preview 看全图、doc_lint 跑一遍，再按顺序回答，每一项给出「问题 → 改法」：',
+      '1. 第一眼：画面第一眼落在哪里？应该是标题或主体；落在装饰上就要降装饰、升主角。',
+      '2. 层级：信息不超过 3 级（主标题 → 副标题／卖点 → 细节）。同级元素样式一致。',
+      '3. 强调手段从强到弱：尺寸 > 明暗对比 > 颜色 > 位置 > 字重。一次只用一两种，别全部叠上。',
+      '4. 字号：全图 3–5 个字号，按固定比例递进（1.25、1.333、1.5 或 1.618 选一个）；主标题至少是正文的 3 倍。',
+      '5. 网格与对齐：元素左边缘或中线对到同一条线上；用 layout_apply 统一摆放，不要逐像素挪。',
+      '6. 留白：四边安全距约画布短边 5%；元素之间的间距分成 2–3 档，不要每处都不一样。',
+      '7. 配色：主色约 60%、辅色约 30%、强调色约 10%；强调色只给最重要的一处。文字与背景对比度不低于 3:1（doc_lint 会检查）。',
+      '修正：每轮只改得分最低的一项（文案一字不改），改完 doc_preview 复看；最多两轮，最后说明改了什么、为什么。',
+      '参考：caoxg/claude-skill-aesthetic-foundations（MIT）的审视顺序与层级规则，按本工作台工具改写。'
+    ].join('\n')
+  },
+  {
+    slug: 'layout-grammar', category: 'style', name: '版式：常用海报版式', triggers: '版式,排版,布局,构图,海报版式,网格,大字报,分割构图',
+    description: '八种常用海报版式的区域比例与适用场景（相对坐标，可直接用于 layout_apply）；叠加在工作流 Skill 之上。',
+    tools: [],
+    body: [
+      '# 版式：常用海报版式',
+      '先按内容选一种版式，再用 layout_apply 的相对坐标摆放（[x,y,w,h]，画布宽高为 1）。',
+      '- 大字报：标题占画面 50% 以上，可出血压边；没有或只有很小的主体图。适合口号、活动名。标题区 [0.06,0.08,0.88,0.55]。',
+      '- 上图下文：主体图占上方约 60%，文字在下方 40%。适合商品、人物。主体 [0.05,0.05,0.9,0.58]，标题 [0.08,0.66,0.84,0.14]。',
+      '- 左右分割：一侧图一侧文（6:4 或 5:5），适合横版 banner。图 [0,0,0.58,1]，文 [0.62,0.2,0.33,0.6]。',
+      '- 中心对称：主体居中、标题在上或下居中，四周留白多。适合高端、品牌、节庆。',
+      '- 对角线：主体与标题沿对角线排布，制造动势。适合运动、科技、促销。',
+      '- 模块网格：12 栏网格，信息分块对齐。适合信息多的展览、课程、活动日程。',
+      '- 满版图压字：背景照片铺满，文字压在图上较空的区域，必要时给文字加 shadow 预设或在下方压一块半透明色块。',
+      '- 边框留白：画面四周留出 8%–12% 的宽边，内容放在框内，适合文艺、展陈。',
+      '通用：不要加「了解更多」「敬请期待」之类的空话，海报上不要做成网页按钮样式；装饰元素不得遮挡文字。',
+      '参考：howardz27/poster-generator-skill、jiemianduan/poster-style-transfer（MIT）的版式归纳，按本工作台改写。'
+    ].join('\n')
+  },
+  {
+    slug: 'color-themes', category: 'style', name: '配色：八套主题色', triggers: '配色,色彩,主题色,调色板,色调,颜色搭配,配色方案',
+    description: '八套可直接使用的配色（背景／主色／辅色／强调色），按画面气质选择；叠加在工作流 Skill 之上。',
+    tools: [],
+    body: [
+      '# 配色：八套主题色',
+      '按「背景／主色／辅色／强调色」使用：背景约 60%，主色约 30%，强调色只用在一处最重要的信息上。',
+      '- 极简黑白：#FFFFFF／#111111／#8A8A8A／#E63B2E（展览、讲座、品牌公告）',
+      '- 森林自然：#F3F1EA／#2F4A3A／#8DA47E／#D9A441（户外、茶饮、环保）',
+      '- 海洋清爽：#EAF4F8／#0F4C75／#3282B8／#FFB703（夏季、旅行、清洁类商品）',
+      '- 日落暖调：#FFF4E6／#E76F51／#F4A261／#264653（餐饮、生活方式、促销）',
+      '- 科技夜色：#0B0F1A／#1F6FEB／#7EE787／#F0F6FC（数码、游戏、发布会）',
+      '- 复古胶片：#F2E8D5／#9C3D2E／#C9A66B／#2E3B4E（文艺、怀旧、书店）',
+      '- 糖果童趣：#FFF8FB／#FF6F91／#FFC75F／#4D8076（儿童、甜品、节日）',
+      '- 东方雅致：#F5EFE6／#8E2C2C／#C8A165／#2B2B2B（国风、节庆、茶与酒）',
+      '用户有品牌色时以品牌色为主色，只从这里借背景和强调色；文字与背景对比度不低于 3:1。',
+      '参考：anthropics/skills theme-factory（Apache-2.0）「每套主题固定四色」的做法；色值为本工作台自拟。'
+    ].join('\n')
+  },
+  {
+    slug: 'digital-painting-layers', category: 'capability', name: '绘画：分层上色流程', triggers: '绘画,上色,画一张,线稿上色,平涂,厚涂,手绘,给线稿上色,插画上色',
+    description: '按线稿 → 平涂 → 阴影 → 高光 → 背景 → 整体调色的顺序分层完成一张画，每一步都是独立可调的图层。',
+    tools: ['doc_read', 'doc_preview', 'image_generate', 'asset_import', 'region_capture', 'region_select', 'region_refine', 'region_mask', 'fill_solid', 'shape_create', 'adjust_apply', 'filter_apply', 'layer_props', 'layer_group', 'layer_arrange', 'layer_fit', 'doc_lint'],
+    body: [
+      '# 绘画：分层上色流程',
+      '说明：Agent 目前没有画笔工具，笔触类工作用「选区＋填充＋蒙版」和生图完成；用户自己的线稿优先。',
+      '1. 线稿：有用户线稿就 asset_import 放最上层；没有就 image_generate「白底黑色线稿，线条干净闭合，不上色」后导入。线稿层 layer_props blend=multiply，命名「线稿」。',
+      '2. 平涂：每个色块一层——region_select(object 或 rect, layer=线稿) 选出区域 → fill_solid 填固有色 → region_mask(新图层, feather 0–1) 限制在选区内；命名「平涂-皮肤」「平涂-衣服」…，放在线稿下面。',
+      '3. 阴影：在平涂组上方 fill_solid 一层偏冷的深色（主光对面的区域），region_mask 限制到背光面，layer_props blend=multiply、opacity 0.3–0.5。',
+      '4. 高光：同样方法用偏暖的亮色，blend=screen 或 overlay、opacity 0.4–0.7，只放在受光最强的小块区域。',
+      '5. 背景：fill_solid 或 image_generate 背景（提示词写明不要人物），asset_import(role=background)；需要景深时对背景 filter_apply 高斯模糊。',
+      '6. 整体调色：最上方 adjust_apply（colorBalance／photoFilter）统一冷暖，hueSaturation 小幅降饱和让画面更统一。',
+      '7. layer_group 分为 线稿／平涂／光影／背景／调色；doc_preview 检查色块是否溢出线稿、光影方向是否一致。',
+      '参考：图层顺序与混合模式为常见数字绘画做法；本 Skill 为本工作台原创。'
+    ].join('\n')
   }
 ];
 

@@ -100,7 +100,7 @@ export interface TaskSummary {
   updatedAt: number;
 }
 
-export interface Site { id: string; name: string; url: string; note?: string }
+export interface Site { id: string; name: string; url: string; note?: string; imageHosts?: string[] }
 
 export interface Capabilities {
   protocol: typeof WB_PROTOCOL;

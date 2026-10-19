@@ -14,7 +14,7 @@ English · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
 ![BYOK](https://img.shields.io/badge/AI-bring%20your%20own%20key-8A2BE2)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#-contributing)
 
-[Live demo](https://tianming332.github.io/tjm-design-studio-demo/) · [Features](#-features) · [Quick start](#-quick-start) · [AI setup](#-ai-bring-your-own-key) · [License](#-license--copyright)
+[Live demo](#-live-demo) · [Features](#-features) · [Quick start](#-quick-start) · [AI setup](#-ai-bring-your-own-key) · [License](#-license--copyright)
 
 </div>
 
@@ -26,9 +26,30 @@ Most AI design tools hand you a flat picture. TJM Design Studio works the other 
 
 No install, no account, no server. Everything runs in your browser tab.
 
+## 🖼 Screenshots & work
+
+**The agent at work (product poster)**
+
+| | |
+| :---: | :---: |
+| <img src="docs/images/agent-1-product.png" alt="1. Generates the product shot onto the canvas" width="420" /><br><sub>1. Generates the product shot onto the canvas</sub> | <img src="docs/images/agent-2-copy.png" alt="2. Adds title, selling points and price through the five-step workflow" width="420" /><br><sub>2. Adds title, selling points and price through the five-step workflow</sub> |
+| <img src="docs/images/agent-3-region-edit.png" alt="3. Select an area and let the agent change only that" width="420" /><br><sub>3. Select an area and let the agent change only that</sub> | <img src="docs/images/agent-4-final.png" alt="4. Everything stays as editable layers" width="420" /><br><sub>4. Everything stays as editable layers</sub> |
+
+**Editor**
+
+| | |
+| :---: | :---: |
+| <img src="docs/images/ui-ai-start.jpg" alt="Start screen" width="420" /> | <img src="docs/images/ui-editor.png" alt="Editor" width="420" /> |
+
+**Made with the agent**
+
+| | | |
+| :---: | :---: | :---: |
+| <img src="docs/images/work-character-sheet.png" alt="Character sheet" width="280" /><br><sub>Character sheet</sub> | <img src="docs/images/work-product-photo.jpg" alt="Commercial product photo" width="280" /><br><sub>Commercial product photo</sub> | <img src="docs/images/work-brand-vis.png" alt="Brand identity board" width="280" /><br><sub>Brand identity board</sub> |
+
 ## 🚀 Live demo
 
-[https://tianming332.github.io/tjm-design-studio-demo/](https://tianming332.github.io/tjm-design-studio-demo/) (published by GitHub Pages from `main`).
+`https://tianming332.github.io/tjm-design-studio-demo/` (published by GitHub Pages from `main`).
 
 - Add `?mock=1` to the URL to try the whole agent workflow with a built-in simulated model. You don't need a key.
 - Use Chrome or Edge 113+. The canvas is composited with WebGPU.
@@ -45,10 +66,12 @@ No install, no account, no server. Everything runs in your browser tab.
 | **Font library** | 19 commercially usable Chinese, Japanese and Latin fonts, each downloaded the first time it's used. |
 | **Touch & stylus** | iPad and phone layouts, fullscreen on first touch, pinch to zoom, two-finger tap to undo; with a pen, the pen draws and fingers move the canvas. Scene tools for touch drawing and touch editing. |
 
+15 built-in skills: poster, scoped revision, generated background, text effects, region edit, layer decomposition, poster layer split, illustration layer split, design critique, layout grammar, colour themes, layered painting, e-commerce main image, 9:16 feed, TJM brand.
+
 ## ⚡ Quick start
 
 ```bash
-git clone https://github.com/<user>/tjm-design-studio-demo.git
+git clone https://github.com/tianming332/tjm-design-studio-demo.git
 cd tjm-design-studio-demo
 npm ci
 npm run dev            # http://127.0.0.1:5191
@@ -106,6 +129,7 @@ Issues and PRs are welcome. Please run `npm test` and `npm run smoke:demo` befor
 - **Code:** [Apache License 2.0](LICENSE), Copyright 2026 TJM. You may use, modify and distribute it, including commercially. You must keep the license and [NOTICE](NOTICE), and mark files you changed. The license includes a patent grant and comes with **no warranty**.
 - **Trademarks:** the TJM name and the logos in `public/brand/` (and the lowercase "tjm" wordmark) are **not** covered by the license (Apache-2.0 §6). Forks and redistributions must replace them and must not suggest endorsement.
 - **Third-party code:** PhotoCraft (MIT OR Apache-2.0), vgpu and vgpu-optimized-black-hole, ag-psd, React, zustand and sql.js (MIT). License texts are in [`third_party/`](third_party).
+- **Design skill sources:** some built-in skills adapt ideas from MIT / Apache-2.0 projects; see [`third_party/design-skill-sources.md`](third_party/design-skill-sources.md).
 - **Fonts:** SIL Open Font License 1.1, with the license in each font folder. You may use them freely in your designs, including commercial work and embedded in exported files. You may not sell the font files on their own, and modified fonts must not reuse the reserved font name.
 - **Your work and AI output:** you own what you create. AI-generated content is also subject to the terms of the provider you use (Google, OpenAI, Anthropic, Zhipu, DeepSeek, Alibaba, ByteDance), and API usage is billed to your own account. You are responsible for having the rights to anything you upload or import, including images from third-party websites.
 

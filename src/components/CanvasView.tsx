@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { EmptyCanvas } from './EmptyCanvas';
 import { useAppearance } from '../state/appearance';
 import { useStore, flatten, PAINT_TOOLS, STROKE_TOOLS, SAMPLED_TOOLS, SELECT_TOOLS, PATH_TOOLS } from '../state/store';
+import { toolCursor } from './toolCursors';
 import { renderFull, renderDamage, registerCanvas } from '../engine/render';
 import { boxCenter, boxHandles, constrainBox, cropRatio, dragBox, fitRatio, isTinyDrag, modeFrom, pointInMask, resizeBox, rotateAbout, screenToDoc, stripBox, sweepAngle, type Pt } from '../engine/selection';
 import { addPoint, isGradientTooShort, type Pt2 } from '../engine/brush';
@@ -1052,11 +1053,7 @@ export function CanvasView() {
     if (images.length && hasAccess(useWb.getState())) void useAssets.getState().uploadFiles(images);
   };
 
-  const cursor = activeTool === 'type' && !space ? 'text' : space || activeTool === 'hand'
-    ? 'grab'
-    : activeTool === 'move' || activeTool === 'pathSelect' || activeTool === 'directSelect'
-      ? 'default'
-      : STROKE_TOOLS.includes(activeTool) ? 'none' : 'crosshair';
+  const cursor = space ? 'grab' : toolCursor(activeTool, STROKE_TOOLS.includes(activeTool));
   const transform = `translate(${view.tx}px, ${view.ty}px) scale(${view.scale})`;
 
   return (

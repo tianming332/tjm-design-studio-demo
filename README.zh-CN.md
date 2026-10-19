@@ -14,7 +14,7 @@
 ![BYOK](https://img.shields.io/badge/AI-%E8%87%AA%E5%B8%A6%20Key-8A2BE2)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#-参与贡献)
 
-[在线体验](https://tianming332.github.io/tjm-design-studio-demo/) · [功能](#-功能) · [快速开始](#-快速开始) · [AI 配置](#-ai自带-key) · [协议与版权](#-协议与版权)
+[在线体验](#-在线体验) · [功能](#-功能) · [快速开始](#-快速开始) · [AI 配置](#-ai自带-key) · [协议与版权](#-协议与版权)
 
 </div>
 
@@ -26,9 +26,30 @@
 
 不用安装，不用注册，也没有服务器，一切都在你的浏览器标签页里运行。
 
+## 🖼 截图与作品
+
+**Agent 制图过程（商品海报）**
+
+| | |
+| :---: | :---: |
+| <img src="docs/images/agent-1-product.png" alt="1. 生成商品主图并放进画布" width="420" /><br><sub>1. 生成商品主图并放进画布</sub> | <img src="docs/images/agent-2-copy.png" alt="2. 补齐标题、卖点、价格，走完五步工作流" width="420" /><br><sub>2. 补齐标题、卖点、价格，走完五步工作流</sub> |
+| <img src="docs/images/agent-3-region-edit.png" alt="3. 框选一块区域，让 Agent 只改这里" width="420" /><br><sub>3. 框选一块区域，让 Agent 只改这里</sub> | <img src="docs/images/agent-4-final.png" alt="4. 结果全部是可编辑图层" width="420" /><br><sub>4. 结果全部是可编辑图层</sub> |
+
+**编辑器**
+
+| | |
+| :---: | :---: |
+| <img src="docs/images/ui-ai-start.jpg" alt="开始界面" width="420" /> | <img src="docs/images/ui-editor.png" alt="编辑器界面" width="420" /> |
+
+**Agent 作品**
+
+| | | |
+| :---: | :---: | :---: |
+| <img src="docs/images/work-character-sheet.png" alt="角色设定图" width="280" /><br><sub>角色设定图</sub> | <img src="docs/images/work-product-photo.jpg" alt="商业广告摄影" width="280" /><br><sub>商业广告摄影</sub> | <img src="docs/images/work-brand-vis.png" alt="品牌视觉图集" width="280" /><br><sub>品牌视觉图集</sub> |
+
 ## 🚀 在线体验
 
-[https://tianming332.github.io/tjm-design-studio-demo/](https://tianming332.github.io/tjm-design-studio-demo/)（由 GitHub Pages 从 `main` 分支发布）
+`https://tianming332.github.io/tjm-design-studio-demo/`（由 GitHub Pages 从 `main` 分支发布）
 
 - 地址后加 `?mock=1`，可以用内置的模拟模型体验完整的 Agent 流程，不需要 Key。
 - 需要 Chrome 或 Edge 113 以上版本（画布用 WebGPU 合成）。
@@ -45,10 +66,12 @@
 | **字体库** | 19 套可商用的中日英字体，第一次用到时才下载。 |
 | **触屏与触控笔** | iPad／手机布局，首次触摸自动全屏，双指缩放，双指轻点撤销；使用触控笔时笔画画、手指移动画布。场景工具含「触摸绘图」「触摸编辑」。 |
 
+内置 15 个 Skill：海报、局部修改、生成背景、特效字、选区处理、拆层、海报分层、插画分层、设计自检、版式、配色、分层上色、电商主图、信息流竖版、TJM 品牌。
+
 ## ⚡ 快速开始
 
 ```bash
-git clone https://github.com/<用户名>/tjm-design-studio-demo.git
+git clone https://github.com/tianming332/tjm-design-studio-demo.git
 cd tjm-design-studio-demo
 npm ci
 npm run dev            # http://127.0.0.1:5191
@@ -106,6 +129,7 @@ public/fonts/            字体及各自的 OFL 许可
 - **代码**：[Apache License 2.0](LICENSE)，Copyright 2026 TJM。可以免费使用、修改、分发，包括商用。条件是保留许可证和 [NOTICE](NOTICE) 文件，并标明你改过哪些文件。协议附带专利授权，且**不提供任何担保**。
 - **商标**：TJM 名称、`public/brand/` 中的标志以及小写「tjm」字标**不在**本协议授权范围内（Apache-2.0 第 6 条）。Fork 或再分发时必须替换，也不得暗示得到了我们的认可。
 - **第三方代码**：PhotoCraft（MIT 或 Apache-2.0 二选一），以及 vgpu、vgpu-optimized-black-hole、ag-psd、React、zustand、sql.js（均为 MIT）。许可原文见 [`third_party/`](third_party)。
+- **设计 Skill 参考来源**：部分内置 Skill 改写自 MIT／Apache-2.0 开源项目的思路，来源与协议见 [`third_party/design-skill-sources.md`](third_party/design-skill-sources.md)。
 - **字体**：SIL Open Font License 1.1，许可文件放在每个字体目录里。可以免费用于设计作品，包括商用和嵌入导出文件；但不能单独出售字体文件，修改后的字体不能沿用保留的字体名称。
 - **你的作品与 AI 内容**：你创作的内容归你所有。AI 生成内容还要遵守你所用服务商（Google、OpenAI、Anthropic、智谱、DeepSeek、阿里云、字节跳动）的使用条款，接口费用由你自己的账户支付。你上传或导入的素材（包括来自第三方网站的图片）需要你自己确认拥有相应权利。
 

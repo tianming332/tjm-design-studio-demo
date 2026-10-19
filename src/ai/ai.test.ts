@@ -86,6 +86,14 @@ describe('EditorBridge', () => {
     expect(result.status).toBe('ok');
     expect(sent.flatMap((e) => e.batch).some((c) => c.cmd === 'layer.arrange.bringToFront')).toBe(false);
   });
+  it('new text / shapes go to the top of the stack, not above the selected base layer', async () => {
+    const { s, sent } = fakeEngine();
+    const r = await bridgeWith(s).b.execute(task, step('text_create', { text: '标题', x: 10, y: 10 }));
+    expect(r).toMatchObject({ status: 'ok', affectedLayers: [9] });
+    const front = sent.find((e) => e.batch[0].cmd === 'layer.arrange.bringToFront');
+    expect(front?.batch).toEqual([{ cmd: 'layer.arrange.bringToFront', params: { layer: 9 } }]);
+    expect(front?.idempotencyKey).toBe('tsk_1:stp_text_create:front');
+  });
   it('doc_read returns the real tree with ids, text and locks', async () => {
     const { s } = fakeEngine();
     const r = await bridgeWith(s).b.execute(task, step('doc_read', {}));

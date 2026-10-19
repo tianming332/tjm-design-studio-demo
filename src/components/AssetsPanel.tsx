@@ -6,9 +6,9 @@ import { hasAccess, useWb } from '../state/workbench';
 import { useStore } from '../state/store';
 import { AccessGate } from './AccessGate';
 import { wbApi } from '../ai/api';
-import type { AssetRecord, Site } from '../ai/contract';
+import type { AssetRecord } from '../ai/contract';
 import { PanelIntro } from './PanelIntro';
-import { openAICreation, useNavigation } from '../state/navigation';
+import { openAICreation } from '../state/navigation';
 
 export const ASSET_DRAG_TYPE = 'application/x-tjm-asset';
 const KIND_LABEL: Record<AssetRecord['kind'], string> = { upload: '我的', generated: 'AI', web: '网络' };
@@ -43,11 +43,16 @@ function Library() {
   const [over, setOver] = useState(false);
   const [filter, setFilter] = useState<'all' | AssetRecord['kind']>('all');
   const onDrop = (e: DragEvent) => { e.preventDefault(); setOver(false); void st.uploadFiles(Array.from(e.dataTransfer.files ?? [])); };
+  // Paste a copied image straight into the library (works for images saved from any site / app).
+  const onPaste = (e: React.ClipboardEvent) => {
+    const files = Array.from(e.clipboardData.files ?? []).filter((f) => /^image\//.test(f.type));
+    if (files.length) { e.preventDefault(); void st.uploadFiles(files); }
+  };
   const items = st.items.filter((a) => filter === 'all' || a.kind === filter);
   return (
-    <div className="ai-section">
+    <div className="ai-section" onPaste={onPaste}>
       <label className={`asset-drop${over ? ' over' : ''}`} data-testid="asset-drop" onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); setOver(true); } }} onDragLeave={() => setOver(false)} onDrop={onDrop}>
-        把图片拖到这里，或<span className="link">选择文件</span>（PNG／JPEG／WebP）
+        把图片拖到这里、<span className="link">选择文件</span>，或 Ctrl/⌘+V 粘贴（PNG／JPEG／WebP）
         <input type="file" accept="image/png,image/jpeg,image/webp" multiple hidden onChange={(e) => { const f = Array.from(e.target.files ?? []); e.target.value = ''; void st.uploadFiles(f); }} />
       </label>
       <div className="ai-row asset-filter">{(['all', 'upload', 'generated', 'web'] as const).map((k) => <button key={k} className={filter === k ? 'active' : ''} onClick={() => setFilter(k)}>{k === 'all' ? '全部' : KIND_LABEL[k]}</button>)}</div>
@@ -61,11 +66,18 @@ function Library() {
 function Internet() {
   const sites = useWb((s) => s.caps?.sites ?? []);
   const st = useAssets();
+  const [url, setUrl] = useState('');
   return (
     <div className="ai-section">
-      <p className="ai-status">在页面内浏览，把图片拖进右侧导入区或粘贴图片地址，即可存入素材库。网站内容的许可以原站为准。</p>
-      <ul className="site-list">{sites.map((s) => <li key={s.id}><button data-testid={`site-${s.id}`} onClick={() => { useNavigation.setState({ utility: undefined }); st.openSite(s); }}>{s.name}</button><small>{s.note}</small></li>)}</ul>
-      {!sites.length && <p className="ai-status">还没有可用的素材网站。</p>}
+      <p className="ai-status">点开网站会在新标签打开。登录、找到图片后：右键保存到电脑再拖进「我的素材」，或复制图片后在「我的素材」里 Ctrl/⌘+V 粘贴。</p>
+      <ul className="site-list">{sites.map((s) => <li key={s.id}><button data-testid={`site-${s.id}`} onClick={() => st.openSite(s)}>{s.name} ↗</button><small>{s.note}</small></li>)}</ul>
+      {!sites.length && <p className="ai-status">还没有可用的网站，可在后台「素材网站」添加。</p>}
+      <form className="asset-url-form" onSubmit={(e) => { e.preventDefault(); if (url.trim()) { void st.importImageUrl(url.trim()); setUrl(''); } }}>
+        <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="粘贴图片地址直接导入（限后台登记的域名）" aria-label="图片地址" />
+        <button className="primary" disabled={!url.trim()}>导入</button>
+      </form>
+      {st.error && <p className="ai-error">{st.error}</p>}
+      {st.notice && <p className="ai-note">{st.notice}</p>}
     </div>
   );
 }
@@ -89,47 +101,6 @@ export function AssetsPanel() {
       {access && tab === 'library' && <Library />}
       {tab === 'internet' && <Internet />}
       <button className="wide-button" onClick={() => openAICreation('asset')}>用 AI 生成素材 →</button>
-    </div>
-  );
-}
-
-/** In-page site browser (no new tab). Cross-origin pages load as credentialless iframes because
- *  the editor is cross-origin isolated; their images are imported by drag-and-drop or URL. */
-export function SiteBrowser() {
-  const site = useAssets((s) => s.browsing);
-  const sites = useWb((s) => s.caps?.sites ?? []);
-  const st = useAssets();
-  const [url, setUrl] = useState('');
-  const [over, setOver] = useState(false);
-  if (!site) return null;
-  const take = (e: DragEvent) => {
-    e.preventDefault(); setOver(false);
-    const uri = e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain');
-    const html = e.dataTransfer.getData('text/html');
-    const src = /<img[^>]+src=["']([^"']+)/i.exec(html)?.[1];
-    const pick = (src || uri || '').split('\n').find((l) => /^https:\/\//.test(l.trim()))?.trim();
-    if (pick) void st.importUrl(site, pick);
-  };
-  return (
-    <div className="site-browser" role="dialog" aria-label={`互联网素材 · ${site.name}`} data-testid="site-browser">
-      <header>
-        <nav>{sites.map((s: Site) => <button key={s.id} className={s.id === site.id ? 'active' : ''} onClick={() => st.openSite(s)}>{s.name}</button>)}</nav>
-        <button aria-label="关闭" onClick={() => st.openSite(undefined)}>关闭</button>
-      </header>
-      <div className="site-body">
-        <iframe key={site.id} src={site.url} title={site.name} {...{ credentialless: '' }} sandbox="allow-scripts allow-same-origin allow-forms" referrerPolicy="no-referrer" />
-        <aside className={`site-drop${over ? ' over' : ''}`} data-testid="site-drop" onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)} onDrop={take}>
-          <b>导入区</b>
-          <p>从左侧网页把图片拖到这里</p>
-          <form onSubmit={(e) => { e.preventDefault(); if (url.trim()) void st.importUrl(site, url.trim()); setUrl(''); }}>
-            <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="或粘贴图片地址" aria-label="图片地址" />
-            <button className="primary" disabled={!url.trim()}>导入</button>
-          </form>
-          {st.error && <p className="ai-error">{st.error}</p>}
-          {st.notice && <p className="ai-note">{st.notice}</p>}
-          <small>网页若空白，说明该站禁止被嵌入。</small>
-        </aside>
-      </div>
     </div>
   );
 }

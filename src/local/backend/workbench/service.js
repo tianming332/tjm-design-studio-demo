@@ -5,7 +5,7 @@ import { geminiSettings, getStyle, reserveAccessUnits, completeReservation, refu
 import { generate, collectImageInputs, buildDirectImagePrompt } from '../upstream.js';
 import { TOOLS, TOOL_BY_NAME, WORKFLOW_PHASES, canonical, digest, stepDigest, targetLayers, validateCall } from './tools.js';
 import { ProviderError } from './gemini.js';
-import { agentRouter, vendorImage, decomposeImage, PROVIDER_LABEL } from './providers.js';
+import { agentRouter, vendorImage, decomposeImage, modelRegistry, PROVIDER_LABEL } from './providers.js';
 import { mockAgentTurn, mockImage } from './mock.js';
 import * as S from './store.js';
 import { DESIGN_EXECUTION_RULES, needsFinalPreview } from './review.js';
@@ -716,14 +716,17 @@ export function createWorkbench(db, config, opts = {}) {
   async function capabilities(actor) {
     const cfg = await S.workbenchConfig(db);
     const gem = await geminiSettings(db);
-    const option = (id, provider, extra = {}) => ({ id, label: id === 'mock' ? '模拟模型' : id, provider: isMock ? 'mock' : provider, ...extra });
+    // The admin-set display name (model library) travels to the editor; falls back to the id.
+    const reg = isMock ? [] : await modelRegistry(db);
+    const labelOf = (provider, id) => reg.find(m => m.provider === provider && m.id === id)?.label || '';
+    const option = (id, provider, extra = {}) => ({ id, label: id === 'mock' ? '模拟模型' : (labelOf(provider, id) || id), provider: isMock ? 'mock' : provider, ...extra });
     const imageVendor = cfg.models.imageProvider;
     const imageIds = isMock ? ['mock'] : imageVendor !== 'gemini' ? [cfg.models.imageModel].filter(Boolean) : [...new Set([gem.textModel, gem.editModel].filter(Boolean))];
     const configured = isMock || !!cfg.models.agent;
     return {
       protocol: WB_PROTOCOL, applicationId: 'workbench', mode: 'official', mock: isMock,
       aiEnabled: cfg.enabled && configured && !!actor.issueId,
-      reason: !cfg.enabled ? '设计 Agent 已在后台停用' : !configured ? '请在「设置 · AI」中填写 Key 并选择 Agent 模型' : !actor.issueId ? '请先输入体验码' : undefined,
+      reason: !cfg.enabled ? '设计 Agent 已在后台停用' : !configured ? '后台尚未为设计 Agent 绑定模型' : !actor.issueId ? '请先输入体验码' : undefined,
       model: isMock ? 'mock' : cfg.models.agent || null, provider: isMock ? 'mock' : cfg.models.agentProvider, verified: !isMock && verifiedAgent(cfg),
       models: {
         agent: configured ? [option(isMock ? 'mock' : cfg.models.agent, cfg.models.agentProvider)] : [],
@@ -733,7 +736,7 @@ export function createWorkbench(db, config, opts = {}) {
       imageEnabled: cfg.enabled && imageIds.length > 0 && !!actor.issueId,
       tools: TOOLS.map(t => ({ name: t.name, kind: t.kind, risk: t.risk })),
       limits: cfg.limits,
-      sites: cfg.sites.filter(s => s.enabled).map(({ id, name, url, note }) => ({ id, name, url, note })),
+      sites: cfg.sites.filter(s => s.enabled).map(({ id, name, url, note, imageHosts }) => ({ id, name, url, note, imageHosts })),
       closed: ['resource-connector-api', 'code-execution', 'multi-agent', 'event-streaming', 'auto-layer-split']
     };
   }

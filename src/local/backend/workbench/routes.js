@@ -172,14 +172,19 @@ export async function workbenchAdminRoutes(request, url, db, config, h) {
 
 function validateSites(sites) {
   if (!Array.isArray(sites) || sites.length > 40) throw wbError('BAD_REQUEST', '网站列表无效');
-  return sites.map(s => {
-    const id = String(s.id || '').trim();
-    if (!/^[a-z0-9][a-z0-9-]{1,39}$/.test(id)) throw wbError('BAD_REQUEST', `网站 id 无效：${id}`);
+  const used = new Set();
+  const slug = v => String(v || '').toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+  return sites.map((s, i) => {
     let url;
-    try { url = new URL(String(s.url)); } catch { throw wbError('BAD_REQUEST', `网站地址无效：${s.url}`); }
-    if (url.protocol !== 'https:') throw wbError('BAD_REQUEST', '网站地址必须是 https');
+    try { url = new URL(String(s.url)); } catch { throw wbError('BAD_REQUEST', `网站「${s.name || s.url || i + 1}」的地址无效，请填完整的 https 网址`); }
+    if (url.protocol !== 'https:') throw wbError('BAD_REQUEST', `网站「${s.name || url.hostname}」的地址必须是 https`);
+    // id is auto-generated when blank / invalid: the admin no longer has to understand it.
+    let id = slug(s.id) || slug(s.name) || slug(url.hostname.replace(/^www\./, '').split('.')[0]) || `site${i + 1}`;
+    if (id.length < 2) id = `site${i + 1}`;
+    while (used.has(id)) id = `${id}-${i + 1}`;
+    used.add(id);
     const imageHosts = (Array.isArray(s.imageHosts) ? s.imageHosts : String(s.imageHosts || '').split(/[,，\s]+/)).map(x => String(x).trim().toLowerCase()).filter(Boolean);
     for (const host of imageHosts) if (!/^[a-z0-9.-]+\.[a-z]{2,}$/.test(host)) throw wbError('BAD_REQUEST', `图片域名无效：${host}`);
-    return { id, name: String(s.name || id).slice(0, 40), url: url.href, imageHosts, enabled: s.enabled !== false, note: String(s.note || '').slice(0, 120) };
+    return { id, name: String(s.name || url.hostname).slice(0, 40), url: url.href, imageHosts, enabled: s.enabled !== false, note: String(s.note || '').slice(0, 120) };
   });
 }

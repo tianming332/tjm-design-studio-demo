@@ -14,7 +14,7 @@
 ![BYOK](https://img.shields.io/badge/AI-%E8%87%AA%E5%88%86%E3%81%AE%E3%82%AD%E3%83%BC-8A2BE2)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#-コントリビュート)
 
-[デモ](https://tianming332.github.io/tjm-design-studio-demo/) · [機能](#-機能) · [クイックスタート](#-クイックスタート) · [AI 設定](#-aiapi-キーは自分で用意) · [ライセンスと著作権](#-ライセンスと著作権)
+[デモ](#-デモ) · [機能](#-機能) · [クイックスタート](#-クイックスタート) · [AI 設定](#-aiapi-キーは自分で用意) · [ライセンスと著作権](#-ライセンスと著作権)
 
 </div>
 
@@ -26,9 +26,30 @@
 
 インストールもアカウントもサーバーも不要で、すべてブラウザのタブの中で動きます。
 
+## 🖼 スクリーンショットと作例
+
+**エージェントの制作過程（商品ポスター）**
+
+| | |
+| :---: | :---: |
+| <img src="docs/images/agent-1-product.png" alt="1. 商品画像を生成してキャンバスに配置" width="420" /><br><sub>1. 商品画像を生成してキャンバスに配置</sub> | <img src="docs/images/agent-2-copy.png" alt="2. 5 ステップのワークフローでタイトル・訴求・価格を追加" width="420" /><br><sub>2. 5 ステップのワークフローでタイトル・訴求・価格を追加</sub> |
+| <img src="docs/images/agent-3-region-edit.png" alt="3. 範囲を選択し、その部分だけを修正" width="420" /><br><sub>3. 範囲を選択し、その部分だけを修正</sub> | <img src="docs/images/agent-4-final.png" alt="4. すべて編集可能なレイヤーのまま" width="420" /><br><sub>4. すべて編集可能なレイヤーのまま</sub> |
+
+**エディタ**
+
+| | |
+| :---: | :---: |
+| <img src="docs/images/ui-ai-start.jpg" alt="スタート画面" width="420" /> | <img src="docs/images/ui-editor.png" alt="エディタ" width="420" /> |
+
+**エージェントの作例**
+
+| | | |
+| :---: | :---: | :---: |
+| <img src="docs/images/work-character-sheet.png" alt="キャラクター設定画" width="280" /><br><sub>キャラクター設定画</sub> | <img src="docs/images/work-product-photo.jpg" alt="商品広告写真" width="280" /><br><sub>商品広告写真</sub> | <img src="docs/images/work-brand-vis.png" alt="ブランドビジュアル" width="280" /><br><sub>ブランドビジュアル</sub> |
+
 ## 🚀 デモ
 
-[https://tianming332.github.io/tjm-design-studio-demo/](https://tianming332.github.io/tjm-design-studio-demo/)（`main` から GitHub Pages で公開）
+`https://tianming332.github.io/tjm-design-studio-demo/`（`main` から GitHub Pages で公開）
 
 - URL に `?mock=1` を付けると、内蔵のシミュレーションモデルで Agent の流れをひと通り試せます。キーは不要です。
 - Chrome / Edge 113 以上が必要です（キャンバスの合成に WebGPU を使用）。
@@ -45,10 +66,12 @@
 | **フォント** | 商用利用できる中国語・日本語・欧文フォント 19 種。初めて使うときにダウンロード。 |
 | **タッチ・ペン** | iPad／スマホ用レイアウト、最初のタッチで全画面、ピンチでズーム、2 本指タップで取り消し。ペン使用時はペンで描画、指でキャンバス移動。タッチ描画・タッチ編集のシーンツール付き。 |
 
+内蔵 Skill 15 種：ポスター、部分修正、背景生成、文字エフェクト、範囲処理、レイヤー分解、ポスター分層、イラスト分層、デザイン自己チェック、レイアウト、配色、レイヤー彩色、EC メイン画像、縦型フィード、TJM ブランド。
+
 ## ⚡ クイックスタート
 
 ```bash
-git clone https://github.com/<user>/tjm-design-studio-demo.git
+git clone https://github.com/tianming332/tjm-design-studio-demo.git
 cd tjm-design-studio-demo
 npm ci
 npm run dev            # http://127.0.0.1:5191
@@ -106,6 +129,7 @@ Issue と PR を歓迎します。PR を出す前に `npm test` と `npm run smo
 - **コード**：[Apache License 2.0](LICENSE)、Copyright 2026 TJM。商用を含め、利用・改変・再配布が自由にできます。条件は、ライセンスと [NOTICE](NOTICE) を残し、変更したファイルにその旨を明記することです。特許の許諾を含み、**保証は一切ありません**。
 - **商標**：TJM の名称、`public/brand/` 内のロゴ、小文字の「tjm」ワードマークは本ライセンスの対象**外**です（Apache-2.0 第 6 条）。フォークや再配布の際は差し替えてください。公認を受けているかのような表示もしないでください。
 - **サードパーティ**：PhotoCraft（MIT と Apache-2.0 のいずれかを選択可能）、vgpu、vgpu-optimized-black-hole、ag-psd、React、zustand、sql.js（MIT）。ライセンス本文は [`third_party/`](third_party) にあります。
+- **デザイン Skill の参考元**：一部の内蔵 Skill は MIT／Apache-2.0 プロジェクトの考え方を書き直したものです。[`third_party/design-skill-sources.md`](third_party/design-skill-sources.md) を参照。
 - **フォント**：SIL Open Font License 1.1。ライセンスは各フォントフォルダにあります。商用を含むデザインへの使用や、書き出したファイルへの埋め込みは自由です。ただしフォントファイル単体の販売はできず、改変したフォントで予約フォント名を使うこともできません。
 - **作品と AI 出力**：あなたが作った作品はあなたのものです。AI 生成物には、利用するプロバイダ（Google、OpenAI、Anthropic、Zhipu、DeepSeek、Alibaba、ByteDance）の規約も適用されます。API の利用料はあなた自身のアカウントに請求されます。アップロード・取り込みする素材（第三者サイトの画像を含む）については、必要な権利をお持ちであることをご自身でご確認ください。
 

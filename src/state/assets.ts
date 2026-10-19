@@ -9,6 +9,7 @@ import { aiHeld, trackAIWrite, useAIControl } from './aiControl';
 import { assetPlacement, backgroundBaseCount, coversCanvas, type PlacementOptions } from '../engine/placement';
 import type { Batch } from '../engine/session';
 import { flatten } from './store';
+import { useWb } from './workbench';
 
 const ACCEPTED = ['image/png', 'image/jpeg', 'image/webp'];
 
@@ -19,7 +20,6 @@ interface AssetsState {
   notice?: string;
   styles: PublicStyle[];
   generating: boolean;
-  browsing?: Site;
   refresh(): Promise<void>;
   uploadFiles(files: File[]): Promise<void>;
   remove(id: string): Promise<void>;
@@ -27,6 +27,8 @@ interface AssetsState {
   loadStyles(): Promise<void>;
   generate(p: { prompt: string; styleId?: number; size: string; referenceAssetId?: string; placement?: PlacementOptions; model?: string; aspectRatio?: string; imageSize?: string; name?: string }): Promise<{ count: number; placed: boolean } | undefined>;
   importUrl(site: Site, url: string): Promise<void>;
+  /** Pastes an image address: finds the registered site whose hosts match and imports it. */
+  importImageUrl(url: string): Promise<void>;
   openSite(site?: Site): void;
 }
 
@@ -140,5 +142,16 @@ export const useAssets = create<AssetsState>((set, get) => ({
     } catch (e) { set({ error: (e as Error).message }); }
   },
 
-  openSite(site) { set({ browsing: site }); },
+  async importImageUrl(url) {
+    set({ error: undefined, notice: undefined });
+    const u = url.trim();
+    if (!/^https:\/\/\S+/.test(u)) { set({ error: '请粘贴以 https:// 开头的图片地址' }); return; }
+    const host = (() => { try { return new URL(u).hostname.toLowerCase(); } catch { return ''; } })();
+    const sites = useWb.getState().caps?.sites ?? [];
+    const site = sites.find((x) => (x.imageHosts ?? []).some((h) => host === h || host.endsWith(`.${h}`)));
+    if (!site) { set({ error: '该图片域名未在后台登记，无法直接导入；可改为下载后拖入「我的素材」' }); return; }
+    await get().importUrl(site, u);
+  },
+  // Bookmarks open in a real browser tab (login and right-click-save work there, unlike an iframe).
+  openSite(site) { if (site) window.open(site.url, '_blank', 'noopener,noreferrer'); },
 }));
